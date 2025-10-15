@@ -1,37 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { randomUUID } from "crypto";
-import { accessTokenPayloadType, otpTokenPayloadType, refreshTokenPayloadType } from "../types/config";
-const OTP_SECRET = new TextEncoder().encode(process.env.OTP_SECRET || "otptokensceret");
-const REFRESH_TOKEN_SECRET = new TextEncoder().encode(process.env.REFRESH_TOKEN_SECRET || "refreshtokensecret");
+import { accessTokenPayloadType} from "../types/config";
 const ACCESS_TOKEN_SECRET = new TextEncoder().encode(process.env.ACCESS_TOKEN_SECRET || "accesstokensecret");
-const REFRESH_TOKEN_EXPIRY_DAYS = process.env.REFRESH_TOKEN_EXPIRY_DAYS ? parseInt(process.env.REFRESH_TOKEN_EXPIRY_DAYS) : 60;
-export async function generateOtpToken(payload : otpTokenPayloadType) {
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setJti(randomUUID())
-    .setIssuedAt()
-    .setExpirationTime("10m")
-    .sign(OTP_SECRET);
-}
-
-export async function verifyOtpToken(token: string) {
-  const { payload } = await jwtVerify(token, OTP_SECRET, { algorithms: ["HS256"] });
-  return payload as { tokenId : number,userId: number; userUUId: string; deviceUUId: string; jti: string };
-}
-
-export async function generateRefreshToken(payload : refreshTokenPayloadType) {
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setJti(randomUUID())
-    .setIssuedAt()
-    .setExpirationTime(`${REFRESH_TOKEN_EXPIRY_DAYS}d`)
-    .sign(REFRESH_TOKEN_SECRET);
-}
-
-export async function verifyRefreshToken(token: string) {
-  const { payload } = await jwtVerify(token, REFRESH_TOKEN_SECRET, { algorithms: ["HS256"] });
-  return payload as { tokenId : number,userId: number; userUUId: string; deviceUUId: string; jti: string };
-}
 
 // This handles the public and private key concept 
 // Disabling for now for the sake of simplicity

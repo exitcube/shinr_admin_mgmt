@@ -17,10 +17,7 @@ export const entities = [
 // Entities owned by this microservice (managed by migrations here)
 export const ownedEntities = [
     User,
-    UserOtp,
-    UserToken,
     UserDevice,
-    UserAddress
 ];
 
 // Export individual entities and types
