@@ -1,0 +1,40 @@
+{
+  "name": "shinr_user_mgmt",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "build:prod": "tsc -p tsconfig.prod.json",
+    "start": "node dist/index.js",
+    "dev": "ts-node index.ts",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "npm run typeorm migration:generate -- -d config/database.migrations.ts",
+    "migration:run": "npm run typeorm migration:run -- -d config/database.migrations.ts",
+    "migration:revert": "npm run typeorm migration:revert -- -d config/database.migrations.ts",
+    "schema:sync": "npm run typeorm schema:sync -- -d config/database.ts",
+    "schema:drop": "npm run typeorm schema:drop -- -d config/database.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "axios": "^1.11.0",
+    "dotenv": "^17.2.0",
+    "fastify": "^5.4.0",
+    "fastify-plugin": "^5.0.1",
+    "joi": "^18.0.1",
+    "jose": "^6.1.0",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.26",
+    "xlsx": "^0.18.5"
+  }
+}
