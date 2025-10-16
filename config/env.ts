@@ -14,10 +14,7 @@ if (!isProduction) {
 
 // Ensure required JWT env vars are present
 const requiredEnvVars = [
-  "OTP_SECRET",
-  "REFRESH_TOKEN_SECRET",
   "ACCESS_TOKEN_SECRET",
-  "REFRESH_TOKEN_EXPIRY_DAYS"
 ];
 
 const missing = requiredEnvVars.filter((key) => !process.env[key] || process.env[key]?.trim() === "");

@@ -1,7 +1,6 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 
-
 export default async function routes(
   fastify: FastifyInstance,
   opts: FastifyPluginOptions
@@ -12,7 +11,6 @@ export default async function routes(
       environment: process.env.NODE_ENV || 'development',
     };
   });
-
-
+  
 
 }
