@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-
+import adminRoutes from '../admin/routes';
 
 export default async function routes(
   fastify: FastifyInstance,
@@ -11,6 +11,6 @@ export default async function routes(
       environment: process.env.NODE_ENV || 'development',
     };
   });
-  
+  fastify.register(adminRoutes, { prefix: '/admin' });
 
 }
