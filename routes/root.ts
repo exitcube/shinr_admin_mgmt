@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import userRoutes from '../user/routes';
+
 
 export default async function routes(
   fastify: FastifyInstance,
@@ -7,10 +7,10 @@ export default async function routes(
 ) {
   fastify.get('/', async () => {
     return {
-      message: 'Welcome to Shinr User Management API',
+      message: 'Welcome to Shinr Admin  Management API',
       environment: process.env.NODE_ENV || 'development',
     };
   });
+  
 
-  fastify.register(userRoutes, { prefix: '/user-profile' });
 }
