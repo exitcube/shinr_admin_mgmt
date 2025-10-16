@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run Compiled JS",
+      "program": "${workspaceFolder}/dist/index.js",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "envFile": "${workspaceFolder}/.env/.env.development",
+      "sourceMaps": true,
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
