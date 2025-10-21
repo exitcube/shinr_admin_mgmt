@@ -3,6 +3,7 @@ import { Car } from '../models/Cars';
 import { CarSearchQuery } from './type';
 import { createPaginatedResponse } from '../utils/response';
 import { NotFoundError, APIError } from '../types/errors';
+import { ILike } from 'typeorm';
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   return {
@@ -15,53 +16,59 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const {
           searchByModel,
           make,
+          makeId,
           category,
+          categoryId,
           page = 1,
           limit = 10,
-          sortBy = 'model',
-          sortOrder = 'ASC',
+          sortOrder = 'asc',
         } = query;
 
         const carRepo = fastify.db.getRepository(Car);
 
-        
-        let cars: Car[] = await carRepo.find({
-          where: { isActive: true },
+
+        const where: any = { isActive: true };
+
+        if (searchByModel) {
+          where.model = ILike(`%${searchByModel}%`);
+        }
+
+        if (make || makeId) {
+          where.make = {};
+          if (make) where.make.name = ILike(`%${make}%`);
+          if (makeId) where.make.id = makeId;
+        }
+
+        if (category || categoryId) {
+          where.category = {};
+          if (category) where.category.name = ILike(`%${category}%`);
+          if (categoryId) where.category.id = categoryId;
+        }
+
+
+        const cars: Car[] = await carRepo.find({
+          where,
           relations: ['make', 'category'],
+          order: {
+            make: { name: sortOrder},
+            category: { name: sortOrder},
+            model: sortOrder,
+          },
+          skip: (page - 1) * limit,
+          take: limit,
         });
 
-     
-        if (searchByModel) {
-          cars = cars.filter((c: Car) => c.model.toLowerCase().includes(searchByModel.toLowerCase()));
-        }
-        if (make) {
-          cars = cars.filter((c: Car) => c.make?.name.toLowerCase().includes(make.toLowerCase()));
-        }
-        if (category) {
-          cars = cars.filter((c: Car) => c.category?.name.toLowerCase().includes(category.toLowerCase()));
-        }
-
-        const total = cars.length;
+ 
+        const total = await carRepo.count({ where, relations: ['make', 'category'] });
 
         if (!total) {
           throw new NotFoundError('No cars found for the given search criteria', 'RECORD_NOT_FOUND');
         }
 
-        
-        const sortedCars = cars.sort((a: Car, b: Car) => {
-          const orderFactor = sortOrder.toUpperCase() === 'ASC' ? 1 : -1;
-          if (sortBy === 'make') return (a.make?.id! - b.make?.id!) * orderFactor;
-          if (sortBy === 'category') return (a.category?.id! - b.category?.id!) * orderFactor;
-          return a.model.localeCompare(b.model) * orderFactor;
-        });
 
-       
-        const result = sortedCars.slice((page - 1) * limit, page * limit);
-
-      
         reply.status(200).send(
           createPaginatedResponse(
-            result.map((c: Car) => ({
+            cars.map(c => ({
               id: c.id,
               model: c.model,
             })),

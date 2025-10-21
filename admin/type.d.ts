@@ -1,11 +1,11 @@
-export interface CarSearchQuery {
-    model?: string;           
+export interface CarSearchQuery {         
     make?: string;            
     category?: string;       
     search?: string;          
     searchByModel?: string;   
+    makeId?: number;          
+    categoryId?: number;      
     page?: number;            
     limit?: number;           
-    sortBy?: "model" | "make" | "category";
     sortOrder?: "ASC" | "DESC" | "asc" | "desc";
   }
