@@ -11,6 +11,6 @@ export default async function routes(
       environment: process.env.NODE_ENV || 'development',
     };
   });
-  fastify.register(adminRoutes, { prefix: '/admin' });
+  fastify.register(adminRoutes, { prefix: '/cars' });
 
 }

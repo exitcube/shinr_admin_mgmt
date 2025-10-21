@@ -2,7 +2,7 @@ import Joi from 'joi';
 
 export const carSearchValidate = {
   query: Joi.object({
-    model: Joi.string()
+    searchByModel: Joi.string()
       .min(3)
       .optional()
       .messages({
