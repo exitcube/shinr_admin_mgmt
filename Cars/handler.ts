@@ -14,10 +14,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       try {
         const query = request.query as CarSearchQuery;
         const {
-          searchByModel,
-          make,
+          search,
           makeId,
-          category,
           categoryId,
           page = 1,
           limit = 10,
@@ -29,46 +27,34 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const where: any = { isActive: true };
 
-        if (searchByModel) {
-          where.model = ILike(`%${searchByModel}%`);
+        if (search) {
+          where.model = ILike(`%${search}%`);
         }
 
-        if (make || makeId) {
-          where.make = {};
-          if (make) where.make.name = ILike(`%${make}%`);
-          if (makeId) where.make.id = makeId;
+        if (makeId) {
+          where.make = {id: makeId };
         }
 
-        if (category || categoryId) {
-          where.category = {};
-          if (category) where.category.name = ILike(`%${category}%`);
-          if (categoryId) where.category.id = categoryId;
+        if (categoryId) {
+          where.category = { id: categoryId };
         }
 
 
-        const cars: Car[] = await carRepo.find({
+        const [cars, total] = await carRepo.findAndCount({
           where,
           relations: ['make', 'category'],
-          order: {
-            make: { name: sortOrder},
-            category: { name: sortOrder},
-            model: sortOrder,
-          },
+          order: { model: sortOrder},
           skip: (page - 1) * limit,
           take: limit,
         });
-
- 
-        const total = await carRepo.count({ where, relations: ['make', 'category'] });
-
+        
         if (!total) {
           throw new NotFoundError('No cars found for the given search criteria', 'RECORD_NOT_FOUND');
         }
-
-
+        
         reply.status(200).send(
           createPaginatedResponse(
-            cars.map(c => ({
+            cars.map((c: Car) => ({
               id: c.id,
               model: c.model,
             })),

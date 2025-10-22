@@ -1,8 +1,5 @@
-export interface CarSearchQuery {         
-    make?: string;            
-    category?: string;       
-    search?: string;          
-    searchByModel?: string;   
+export interface CarSearchQuery {               
+    search?: string;            
     makeId?: number;          
     categoryId?: number;      
     page?: number;            

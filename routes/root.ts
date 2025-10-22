@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
-import adminRoutes from '../admin/routes';
+import adminRoutes from '../Cars/routes';
 
 export default async function routes(
   fastify: FastifyInstance,
