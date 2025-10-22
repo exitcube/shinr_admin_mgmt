@@ -43,9 +43,15 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const [cars, total] = await carRepo.findAndCount({
           where,
           relations: ['make', 'category'],
+          select:['id','model'],
           order: { model: sortOrder},
           skip: (page - 1) * limit,
           take: limit,
+        });
+
+        cars.forEach((c:Car) => {
+          c.make = {} as any;
+          c.category = {} as any;
         });
         
         if (!total) {
@@ -54,10 +60,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         
         reply.status(200).send(
           createPaginatedResponse(
-            cars.map((c: Car) => ({
-              id: c.id,
-              model: c.model,
-            })),
+            cars.map(({ id, model }: Car) => ({ id, model })),
             total,
             page,
             limit
