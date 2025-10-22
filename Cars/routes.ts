@@ -8,7 +8,7 @@ export default async function adminRoutes(fastify: FastifyInstance, opts: Fastif
   const handler = controller(fastify, opts);
 
   fastify.get('/',
-    { preHandler: [validation(carSearchValidate)] },
+    { preHandler: [authValidationPreHandler, validation(carSearchValidate)] },
     handler.getCarsHandler
   );
 }
