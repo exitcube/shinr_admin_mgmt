@@ -3,13 +3,11 @@ import Joi from 'joi';
 export const carSearchValidate = {
   query: Joi.object({
     search: Joi.string()
-    .pattern(/^[A-Za-z\s]+$/) 
-    .min(3)
-    .optional()
-    .messages({
-      'string.pattern.base': 'Model search term can only contain letters',
-      'string.min': 'Model search term must be at least 3 characters long',
-    }),
+      .min(3)
+      .optional()
+      .messages({
+        'string.min': 'Model search term must be at least 3 characters long',
+      }),
 
     makeId: Joi.number()
       .integer()

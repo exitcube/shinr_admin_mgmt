@@ -48,10 +48,6 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           take: limit,
         });
         
-        if (!total) {
-          throw new NotFoundError('No cars found for the given search criteria', 'RECORD_NOT_FOUND');
-        }
-        
         reply.status(200).send(
           createPaginatedResponse(
             cars,
