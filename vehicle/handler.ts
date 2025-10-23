@@ -32,26 +32,20 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
 
         if (makeId) {
-          where.make = {id: makeId };
+          where.makeId =  makeId ;
         }
 
         if (categoryId) {
-          where.category = { id: categoryId };
+          where.categoryId = categoryId ;
         }
 
 
         const [cars, total] = await carRepo.findAndCount({
           where,
-          relations: ['make', 'category'],
           select:['id','model'],
           order: { model: sortOrder},
           skip: (page - 1) * limit,
           take: limit,
-        });
-
-        cars.forEach((c:Car) => {
-          c.make = {} as any;
-          c.category = {} as any;
         });
         
         if (!total) {
@@ -60,7 +54,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         
         reply.status(200).send(
           createPaginatedResponse(
-            cars.map(({ id, model }: Car) => ({ id, model })),
+            cars,
             total,
             page,
             limit

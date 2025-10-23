@@ -3,7 +3,7 @@ import Joi from 'joi';
 export const carSearchValidate = {
   query: Joi.object({
     search: Joi.string()
-    .pattern(/^[A-Za-z\s]+$/) // Only letters and spaces
+    .pattern(/^[A-Za-z\s]+$/) 
     .min(3)
     .optional()
     .messages({
