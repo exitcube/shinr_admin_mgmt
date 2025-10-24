@@ -4,11 +4,9 @@ export const carSearchValidate = {
   query: Joi.object({
     search: Joi.string()
       .pattern(/^[A-Za-z0-9\s]+$/) 
-      .min(3)
       .optional()
       .messages({
         'string.pattern.base': 'Model search term can only contain letters, numbers, and spaces',
-        'string.min': 'Model search term must be at least 3 characters long',
       }),
 
     makeId: Joi.number()
