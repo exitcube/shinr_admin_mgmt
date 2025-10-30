@@ -6,9 +6,6 @@ import { carSearchValidate } from './validators';
 
 export default async function adminRoutes(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   const handler = controller(fastify, opts);
-
-  fastify.get('/',
-    { preHandler: [authValidationPreHandler, validation(carSearchValidate)] },
-    handler.getCarsHandler
-  );
+  fastify.get('/', { preHandler: [authValidationPreHandler, validation(carSearchValidate)] }, handler.getCarsModelHandler);
+  fastify.get('/carByBrands',{ preHandler: [authValidationPreHandler]}, handler.getCarsBrandHandler);
 }

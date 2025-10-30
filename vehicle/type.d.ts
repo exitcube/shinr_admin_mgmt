@@ -6,3 +6,9 @@ export interface CarSearchQuery {
     limit?: number;           
     sortOrder?: "ASC" | "DESC" | "asc" | "desc";
   }
+
+export type CarBrandQuery =
+  {
+    page?: number;
+    limit?: number;
+  }
