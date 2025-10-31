@@ -42,22 +42,23 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const [cars, total] = await carRepo.findAndCount({
           where,
-          relations: ['category'],
+          relations: ['category', 'make'],
           order: { model: sortOrder},
           skip: (page - 1) * limit,
           take: limit,
         });
-        const carsWithCategory = cars.map(car => ({
+        const carsWithCategoryAndMake= cars.map((car: Car) => ({
           id: car.id,
           model: car.model,
-          category: car.category ? [
-            car.category.name
-          ] : []
+          makeId: car.makeId,
+          makeName: car.make.name ,
+          categoryId:  car.categoryId,
+          categoryName:car.category.name
         }));
         
         reply.status(200).send(
           createPaginatedResponse(
-            carsWithCategory,
+            carsWithCategoryAndMake,
             total,
             page,
             limit
