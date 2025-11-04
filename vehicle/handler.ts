@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions } from 'fastify';
-import { Car, CarMake} from '../models/index';
-import { CarSearchQuery,CarBrandQuery } from './type';
+import { Car, CarMake } from '../models/index';
+import { CarSearchQuery, CarBrandQuery } from './type';
 import { createPaginatedResponse } from '../utils/response';
 import { NotFoundError, APIError } from '../types/errors';
 import { ILike } from 'typeorm';
@@ -32,21 +32,21 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
 
         if (makeId) {
-          where.makeId =  makeId ;
+          where.makeId = makeId;
         }
 
         if (categoryId) {
-          where.categoryId = categoryId ;
+          where.categoryId = categoryId;
         }
 
         const [cars, total] = await carRepo.findAndCount({
           where,
-          select:['id','model'],
-          order: { model: sortOrder},
+          select: ['id', 'model'],
+          order: { model: sortOrder },
           skip: (page - 1) * limit,
           take: limit,
         });
-        
+
         reply.status(200).send(
           createPaginatedResponse(
             cars,
@@ -73,7 +73,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       try {
         const { page = 1, limit = 10 } = request.query as CarBrandQuery;
         const carMakeRepo = fastify.db.getRepository(CarMake);
-        const [carBrands,total]= await carMakeRepo.findAndCount({
+        const [carBrands, total] = await carMakeRepo.findAndCount({
           select: ["id", "name"],
           order: { name: "ASC" },
           skip: (page - 1) * limit,
