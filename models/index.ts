@@ -6,6 +6,7 @@ import { CarMake } from './CarMake';
 import { CarCategory } from './CarCategory';
 import { AdminUser } from './AdminUser';
 import { Banner } from './Banner';
+import { Service } from './Service';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -17,7 +18,8 @@ export const entities = [
     CarCategory,
     CarMake,
     AdminUser,
-    Banner
+    Banner,
+    Service
 ];
 
 // Entities owned by this microservice (managed by migrations here)
@@ -27,7 +29,8 @@ export const ownedEntities = [
         CarCategory,
         CarMake,
         AdminUser,
-        Banner
+        Banner,
+        Service
 
 ];
 
@@ -40,4 +43,5 @@ export { CarCategory, type CarCategory as CarCategoryType } from './CarCategory'
 export { CarMake, type CarMake as CarMakeType } from './CarMake';
 export { AdminUser,type AdminUser as AdminUserType} from './AdminUser'
 export { Banner,type Banner as BannerType} from './Banner'
+export { Service, type Service as ServiceType } from './Service';
 
