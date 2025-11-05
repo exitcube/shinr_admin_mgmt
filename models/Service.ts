@@ -14,10 +14,10 @@ export class Service {
     @Column({ type: 'varchar', length: 100, unique: true })
     name: string;
 
-    @Column({ nullable: false })
+    @Column({ nullable: true })
     imageId: string;
 
-    @Column({ type: 'varchar',nullable: false })
+    @Column({ type: 'varchar',nullable: true})
     targetValue: string;
 
     @Column({ default: true })
