@@ -27,6 +27,9 @@ export class UserAddress {
     @Column({nullable: true})
     name: string;
 
+    @Column({ nullable: true })
+    nickName: string;
+
     @Column({length: 255 ,nullable: true})
     addressLine1: string;
 
