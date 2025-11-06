@@ -11,6 +11,9 @@ export class Banner {
     @Column({ type : 'text', nullable : true})
     text : string;
 
+    @Column({nullable: true})
+    bgColour : string;
+
     @Column({nullable : true})
     bgImageId : string;
 
