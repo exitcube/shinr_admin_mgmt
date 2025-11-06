@@ -14,6 +14,9 @@ export class Service {
     @Column({ type: 'varchar', length: 100, unique: true })
     name: string;
 
+    @Column({ type: 'varchar', length: 100, unique: true })
+    displayName: string;
+
     @Column({ nullable: true })
     imageId: string;
 
