@@ -54,6 +54,9 @@ export class UserAddress {
     @Column({ default: true })
     isActive: boolean;
 
+     @Column({ default: false })
+    isDefault: boolean;
+
     @CreateDateColumn()
     createdAt: Date;
 

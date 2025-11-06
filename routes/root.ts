@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import vehicleRoutes from '../vehicle/routes';
+import serviceRoutes from '../service/routes';
 
 export default async function routes(
   fastify: FastifyInstance,
@@ -12,5 +13,6 @@ export default async function routes(
     };
   });
   fastify.register(vehicleRoutes, { prefix: '/cars' });
+  fastify.register(serviceRoutes,{prefix: '/service'});
 
 }
