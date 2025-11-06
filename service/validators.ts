@@ -6,6 +6,10 @@ export const addServicesValidator = {
             'string.empty': 'Name is required',
             'string.pattern.base': 'Name must be a string',
         }),
+        displayName: Joi.string().required().messages({
+            'string.empty': 'Display Name is required',
+            'string.pattern.base': 'Display Name must be a string',
+        }),
         imageId: Joi.string().optional().messages({
             'string.pattern.base': 'Image ID must be a string',
         }),

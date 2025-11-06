@@ -8,9 +8,9 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
   return {
         addServicesHandler: async (request: FastifyRequest<{ Body: addServicesBody }>,reply: FastifyReply) => {
             try {
-                const { name, imageId, targetValue } = request.body;
+                const { name, displayName,imageId, targetValue } = request.body;
                 const serviceRepo = fastify.db.getRepository(Service);
-                const service = serviceRepo.create({ name:name, imageId:imageId, targetValue:targetValue,isActive:true });
+                const service = serviceRepo.create({ name:name,displayName:displayName,imageId:imageId, targetValue:targetValue,isActive:true });
                 await serviceRepo.save(service);
                 return reply.status(201).send(createSuccessResponse(service, 'Service added successfully'));
             }
