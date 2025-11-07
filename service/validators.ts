@@ -19,3 +19,20 @@ export const addServicesValidator = {
         }),
     }),
 };
+
+export const updateServicesValidator = {
+   body: Joi.object({
+        name: Joi.string().optional().messages({
+            'string.pattern.base': 'Name must be a string',
+        }),
+        displayName: Joi.string().optional().messages({
+            'string.pattern.base': 'Display Name must be a string',
+        }),
+        imageId: Joi.string().optional().messages({
+            'string.pattern.base': 'Image ID must be a string',
+        }),
+        targetValue: Joi.string().optional().messages({
+            'string.pattern.base': 'Target value must be a string',
+        }),
+    }),
+};
