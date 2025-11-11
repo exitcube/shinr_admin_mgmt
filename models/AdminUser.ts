@@ -6,8 +6,10 @@ import {
     UpdateDateColumn,
     Index,
     Generated,
-    OneToOne
+    OneToOne,
+    OneToMany
 } from 'typeorm';
+import { AdminFile } from './AdminFile';
 
 @Entity('adminUser')
 export class AdminUser{
@@ -30,6 +32,9 @@ export class AdminUser{
 
     @Column({ default: false })
     isActive: boolean;
+
+    @OneToMany(() => AdminFile, (adminFile) => adminFile.admin)
+    adminFiles: AdminFile[];
   
     @CreateDateColumn()
     createdAt: Date;
