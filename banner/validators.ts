@@ -37,3 +37,17 @@ export const createBannerValidate = {
     "missingBannerType": "You must provide either text+bgColour or bgImageId.",
   })
 };
+export const updateBannerValidate = {
+  body: Joi.object({
+    text: Joi.string().trim().min(1).optional(),
+    bgColour: Joi.string().trim().min(1).optional(),
+    bgImageId: Joi.string().uuid().allow(null).optional(),
+    buttonText: Joi.string().trim().optional(),
+    targetValue: Joi.string().trim().optional()
+  })
+  .min(1)
+  .messages({
+    'object.min': 'At least one field must be provided to update the banner.',
+    'string.min': 'Empty values are not allowed.'
+  })
+};
