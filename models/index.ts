@@ -7,6 +7,7 @@ import { CarCategory } from './CarCategory';
 import { AdminUser } from './AdminUser';
 import { Banner } from './Banner';
 import { Service } from './Service';
+import { AdminToken } from './AdminToken';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -19,7 +20,8 @@ export const entities = [
     CarMake,
     AdminUser,
     Banner,
-    Service
+    Service,
+    AdminToken
 ];
 
 // Entities owned by this microservice (managed by migrations here)
@@ -30,7 +32,8 @@ export const ownedEntities = [
         CarMake,
         AdminUser,
         Banner,
-        Service
+        Service,
+        AdminToken
 
 ];
 
@@ -44,4 +47,5 @@ export { CarMake, type CarMake as CarMakeType } from './CarMake';
 export { AdminUser,type AdminUser as AdminUserType} from './AdminUser'
 export { Banner,type Banner as BannerType} from './Banner'
 export { Service, type Service as ServiceType } from './Service';
+export { AdminToken, type AdminToken as AdminTokenType } from './AdminToken';
 
