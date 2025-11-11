@@ -4,17 +4,8 @@ import path from "path";
 import { parse } from "csv-parse/sync";
 import bcrypt from "bcrypt";
 import { AdminUser } from "../models/index";
-
-type Result = {
-  created: Array<{ row: number; userName: string; role: string }>;
-  skipped: Array<{
-    row: number;
-    userName?: string;
-    role?: string;
-    reason: string;
-  }>;
-  errors: Array<{ row: number; error: string }>;
-};
+import { Result } from "../type"
+import { role,ALLOWED_ROLES } from "./constant";
 
 export async function addAdminUsers(
   csvFilePath: string,
@@ -57,15 +48,15 @@ export async function addAdminUsers(
       const userName = (rawRow.UserName ?? rawRow.username ?? "")
         .toString()
         .trim();
-      const role = (rawRow.Role ?? rawRow.role ?? "").toString().trim();
+      const adminRole= (rawRow.Role ?? rawRow.role ?? "").toString().trim();
       const password = (rawRow.Password ?? rawRow.password ?? "").toString();
 
-      if (!role) {
+      if (!ALLOWED_ROLES.includes(adminRole as role)) {
         result.skipped.push({
           row: rowIndex,
-          reason: "Missing Role",
+          reason: "Missing Role or Invalid Role",
           userName,
-          role,
+          role:adminRole,
         });
         continue;
       }
@@ -74,18 +65,18 @@ export async function addAdminUsers(
           row: rowIndex,
           reason: "Missing Password",
           userName,
-          role,
+          role:adminRole,
         });
         continue;
       }
 
-      const existing = await adminRepo.findOne({ where: { role } });
+      const existing = await adminRepo.findOne({ where: { userName } });
       if (existing) {
         result.skipped.push({
           row: rowIndex,
           userName: existing.userName,
           role: existing.role,
-          reason: "Role already exists",
+          reason: "UserName already exists",
         });
         continue;
       }
@@ -94,7 +85,7 @@ export async function addAdminUsers(
 
       const newUser = adminRepo.create({
         userName,
-        role,
+        role:adminRole,
         password: hashed,
       });
 
