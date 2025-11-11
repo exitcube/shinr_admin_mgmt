@@ -83,16 +83,16 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
   });
 
   // Handle uncaught exceptions
-  process.on('uncaughtException', (error) => {
-    fastify.log.fatal('Uncaught Exception:', error);
-    process.exit(1);
-  });
+ process.on('uncaughtException', (error) => {
+  fastify.log.fatal({ err: error }, 'Uncaught Exception');
+  process.exit(1);
+});
 
   // Handle unhandled promise rejections
-  process.on('unhandledRejection', (reason, promise) => {
-    fastify.log.fatal('Unhandled Rejection at:', promise, 'reason:', reason);
-    process.exit(1);
-  });
+ process.on('unhandledRejection', (reason, promise) => {
+  fastify.log.fatal({ reason, promise }, 'Unhandled Promise Rejection');
+  process.exit(1);
+});
 
   console.log('✅ Error handler plugin registered successfully');
 };

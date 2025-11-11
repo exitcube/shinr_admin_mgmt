@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import mult from "@fastify/multipart";
 import typeormPlugin from "./plugins/typeorm";
 import cors from "@fastify/cors"; // REMOVE ON PRODUCTION
 import errorHandlerPlugin from "./plugins/errorHandler";
@@ -16,6 +17,7 @@ export async function buildApp() {
   await fastify.register(cors,{
     origin: "*",
   });
+  fastify.register(mult)
   await fastify.register(typeormPlugin);
   await fastify.register(errorHandlerPlugin);
   await fastify.register(userDevicePlugin);
