@@ -17,7 +17,7 @@ export async function buildApp() {
   await fastify.register(cors,{
     origin: "*",
   });
-  fastify.register(mult)
+  await fastify.register(mult)
   await fastify.register(typeormPlugin);
   await fastify.register(errorHandlerPlugin);
   await fastify.register(userDevicePlugin);
