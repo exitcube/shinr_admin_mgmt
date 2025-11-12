@@ -20,12 +20,6 @@ declare module 'fastify' {
   }
 }
 
-export type accessTokenPayloadType = {
-  userId: number;
-  userUUId: string;
-  deviceUUId: string;
-  tokenId: number;
-}
 
 // Define interfaces for the return types
 export interface UserInfo {
@@ -60,6 +54,24 @@ export interface UserDeviceData {
 }
 
 export interface AuthenticatedUser {
+  userId: number;
+  userUUId: string;
+  deviceUUId: string;
+  tokenId: number;
+}
+
+export type adminRefreshTokenPayloadType = {
+  tokenId: number;
+  userUUId: string;
+}
+
+export type adminAccessTokenPayloadType = {
+  userId: number;
+  userUUId: string;
+  tokenId: number;
+}
+
+export type accessTokenPayloadType = {
   userId: number;
   userUUId: string;
   deviceUUId: string;
