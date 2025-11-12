@@ -1,5 +1,5 @@
 import  { FastifyRequest, FastifyReply } from 'fastify';
-import { verifyAccessToken } from './jwt';
+import { verifyUserAccessToken } from './jwt';
 import { createErrorResponse } from './response';
 import { accessTokenPayloadType, AuthenticatedUser } from '../types/config';
 
@@ -61,7 +61,7 @@ export async function authValidationPreHandler(
 
         // Verify the JWT token
         try {
-            const payload : accessTokenPayloadType= await verifyAccessToken(token);
+            const payload : accessTokenPayloadType= await verifyUserAccessToken(token);
             // Verify that the device-id in header matches the device in token
             if (payload.deviceUUId !== deviceId) {
                 const errorResponse = createErrorResponse({
