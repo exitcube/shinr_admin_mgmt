@@ -36,10 +36,11 @@ export default function controller( fastify: FastifyInstance, opts: FastifyPlugi
             401,
             "INVALID_PASSWORD",
             false,
-            "The password you entered is incorrect."
+            "The password  entered is incorrect."
           );
         }
-
+        await adminRepo.update({id:adminUser.id}, { isActive: true });
+        
         const adminToken = adminTokenRepo.create({
           userId: adminUser.id,
           refreshTokenStatus: RefreshTokenStatus.ACTIVE,
