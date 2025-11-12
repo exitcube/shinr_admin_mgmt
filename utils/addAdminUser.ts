@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import bcrypt from "bcrypt";
 import { AdminUser } from "../models/index";
 import { Result } from "../type"
-import { role,ALLOWED_ROLES } from "./constant";
+import { ALLOWED_ROLES } from "./constant";
 
 export async function addAdminUsers(
   csvFilePath: string,
@@ -51,7 +51,7 @@ export async function addAdminUsers(
       const adminRole= (rawRow.Role ?? rawRow.role ?? "").toString().trim();
       const password = (rawRow.Password ?? rawRow.password ?? "").toString();
 
-      if (!ALLOWED_ROLES.includes(adminRole as role)) {
+      if (!ALLOWED_ROLES.includes(adminRole)) {
         result.skipped.push({
           row: rowIndex,
           reason: "Missing Role or Invalid Role",
