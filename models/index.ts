@@ -8,6 +8,8 @@ import { AdminUser } from './AdminUser';
 import { Banner } from './Banner';
 import { Service } from './Service';
 import { AdminToken } from './AdminToken';
+import { AdminFile } from './AdminFile';
+import { File } from './File';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -21,7 +23,9 @@ export const entities = [
     AdminUser,
     Banner,
     Service,
-    AdminToken
+    AdminToken,
+    AdminFile,
+    File
 ];
 
 // Entities owned by this microservice (managed by migrations here)
@@ -33,7 +37,9 @@ export const ownedEntities = [
         AdminUser,
         Banner,
         Service,
-        AdminToken
+        AdminToken,
+        AdminFile,
+        File
 
 ];
 
@@ -48,4 +54,6 @@ export { AdminUser,type AdminUser as AdminUserType} from './AdminUser'
 export { Banner,type Banner as BannerType} from './Banner'
 export { Service, type Service as ServiceType } from './Service';
 export { AdminToken, type AdminToken as AdminTokenType } from './AdminToken';
+export { AdminFile, type AdminFile as AdminFileType } from './AdminFile';
+export { File, type File as FileType } from './File';
 
