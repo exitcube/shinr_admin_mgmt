@@ -82,7 +82,14 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               updateData.text = null;
               updateData.bgColour = null;
             }
-            else if (text || bgColour) {
+            else  if(text || bgColour){
+              if(existingbanner.isImage && !(text && bgColour)){
+                throw new APIError(
+                  "Image banner cannot be updated using text or bgColour alone. Provide both text and bgColour to convert it into a text banner.",
+                  400,
+                  "INVALID_UPDATE_FOR_IMAGE_BANNER"
+                )
+              }
               updateData.isImage = false;
               updateData.bgImageId = null;
             }
