@@ -18,7 +18,7 @@ export default async function bannerRoutes(fastify: FastifyInstance, opts: Fasti
         { preHandler: [authValidationPreHandler, validation(updateBannerValidate)] },
         handler.updatebannerhandler
     );
-    fastify.put(
+    fastify.post(
         '/delete',
         { preHandler: [authValidationPreHandler] },
         handler.deletebannerhandler

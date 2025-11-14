@@ -47,76 +47,63 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         },
 
         updatebannerhandler: async (
-            request: FastifyRequest<{ Body: UpdateBannerBody }>,
-            reply: FastifyReply
+          request: FastifyRequest<{ Body: UpdateBannerBody }>,
+          reply: FastifyReply
         ): Promise<void> => {
-            try {
-                const { id } = request.query as any;
-                const { text, bgColour, bgImageId, buttonText, targetValue } = request.body;
-
-                const bannerRepo = fastify.db.getRepository(Banner)
-
-                const existingbanner = await bannerRepo.findOne({ where: { id,isActive: true } })
-                if (!existingbanner) {
-                    throw new APIError(
-                        `Banner with id ${id} not found`,
-                        404,
-                        "BANNER_NOT_FOUND",
-                        true,
-                        "The banner you are trying to update does not exist."
-                    );
-
-                }
-                if (existingbanner.isImage && (text || bgColour)) {
-                    if (!text || !bgColour) {
-                      throw new APIError(
-                        "Both text and bgColour are required when switching to text banner.",
-                        400,
-                        "BANNER_TEXT_MODE_REQUIRES_TEXT_AND_BGCOLOUR",
-                        true,
-                        "Please provide both text and background colour when updating a text banner."
-                      );
-                    }
-                  }
-                const updateData: any = {            
-                    text: text ?? existingbanner.text,
-                    bgColour: bgColour ?? existingbanner.bgColour,
-                    bgImageId: bgImageId ?? existingbanner.bgImageId,
-                    isImage: existingbanner.isImage,
-                    buttonText: buttonText ?? existingbanner.buttonText,
-                    targetValue: targetValue ?? existingbanner.targetValue, 
-                };
-
-
-                if (bgImageId) {
-                  updateData.isImage = true;
-                  updateData.text = "";
-                  updateData.bgColour = "";
-                }
-                
-                if (text || bgColour) {
-                  updateData.isImage = false;
-                  updateData.bgImageId = "";
-                }
-                    
-
-
-                await bannerRepo.update({ id }, updateData);
-
-                reply.status(200).send(
-                    createSuccessResponse("Banner updated successfully"));
+          try {
+            const { id } = request.query as any;
+            const { text, bgColour, bgImageId, buttonText, targetValue } = request.body;
+        
+            const bannerRepo = fastify.db.getRepository(Banner);
+        
+            const existingbanner = await bannerRepo.findOne({
+              where: { id, isActive: true }
+            });
+        
+            if (!existingbanner) {
+              throw new APIError(
+                `Banner with id ${id} not found`,
+                404,
+                "BANNER_NOT_FOUND",
+                true,
+                "The banner you are trying to update does not exist."
+              );
             }
-            catch (error) {
-                throw new APIError(
-                    (error as Error).message || 'Failed to update banner',
-                    500,
-                    "BANNER_UPDATE_FAILED",
-                    true,
-                    "Failed to update banner. Please try again later."
-                );
-
+            const updateData: any = {
+              text: text ?? existingbanner.text,
+              bgColour: bgColour ?? existingbanner.bgColour,
+              bgImageId: bgImageId ?? existingbanner.bgImageId,
+              buttonText: buttonText ?? existingbanner.buttonText,
+              targetValue: targetValue ?? existingbanner.targetValue,
+              isImage: existingbanner.isImage
+            };
+            if (bgImageId) {
+              updateData.isImage = true;
+              updateData.text = null;
+              updateData.bgColour = null;
             }
-        },
+            else if (text && bgColour && !bgImageId) {
+              updateData.isImage = false;
+              updateData.bgImageId = null;
+            }
+        
+            await bannerRepo.update({ id }, updateData);
+        
+            reply.status(200).send(
+              createSuccessResponse("Banner updated successfully")
+            );
+          }
+          catch (error) {
+            throw new APIError(
+              (error as Error).message || 'Failed to update banner',
+              500,
+              "BANNER_UPDATE_FAILED",
+              true,
+              "Failed to update banner. Please try again later."
+            );
+          }
+        }
+        ,
 
         deletebannerhandler: async (
             request: FastifyRequest,

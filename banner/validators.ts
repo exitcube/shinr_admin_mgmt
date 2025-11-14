@@ -45,9 +45,39 @@ export const updateBannerValidate = {
     buttonText: Joi.string().trim().optional(),
     targetValue: Joi.string().trim().optional()
   })
-  .min(1)
-  .messages({
-    'object.min': 'At least one field must be provided to update the banner.',
-    'string.min': 'Empty values are not allowed.'
-  })
+    .min(1)
+    .custom((value, helpers) => {
+      const hasText = !!value.text;
+      const hasColour = !!value.bgColour;
+      const hasImage = !!value.bgImageId;
+
+      const isTouchingBannerFields = hasText || hasColour || hasImage;
+      if (hasText || hasColour) {
+
+        if (!hasText || !hasColour) {
+          return helpers.error("textRequiresColour");
+        }
+        if (hasImage) {
+          return helpers.error("textBannerNoImage");
+        }
+        return value;
+      }
+      if (hasImage) {
+        return value; 
+      }
+      if (!isTouchingBannerFields) {
+        return value; 
+      }
+
+      return value;
+    })
+    .messages({
+      "object.min": "At least one field must be provided to update the banner.",
+      "string.min": "Empty values are not allowed.",
+      "textRequiresColour": "When using text banners, both text and bgColour are required.",
+      "textBannerNoImage": "You cannot provide bgImageId together with text or bgColour.Either provide only bgImageId or text and bgcolour together"
+    })
 };
+
+
+
