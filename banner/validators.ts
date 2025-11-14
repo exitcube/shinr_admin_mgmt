@@ -51,22 +51,8 @@ export const updateBannerValidate = {
       const hasColour = !!value.bgColour;
       const hasImage = !!value.bgImageId;
 
-      const isTouchingBannerFields = hasText || hasColour || hasImage;
-      if (hasText || hasColour) {
-
-        if (!hasText || !hasColour) {
-          return helpers.error("textRequiresColour");
-        }
-        if (hasImage) {
-          return helpers.error("textBannerNoImage");
-        }
-        return value;
-      }
-      if (hasImage) {
-        return value; 
-      }
-      if (!isTouchingBannerFields) {
-        return value; 
+      if ((hasText || hasColour) && hasImage) {
+        return helpers.error("textBannerNoImage");
       }
 
       return value;
@@ -74,8 +60,7 @@ export const updateBannerValidate = {
     .messages({
       "object.min": "At least one field must be provided to update the banner.",
       "string.min": "Empty values are not allowed.",
-      "textRequiresColour": "When using text banners, both text and bgColour are required.",
-      "textBannerNoImage": "You cannot provide bgImageId together with text or bgColour.Either provide only bgImageId or text and bgcolour together"
+      "textBannerNoImage": "You cannot provide bgImageId together with text or bgColour. Either only bgImageId or text and bgcolour together"
     })
 };
 

@@ -82,7 +82,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               updateData.text = null;
               updateData.bgColour = null;
             }
-            else if (text && bgColour && !bgImageId) {
+            else if (text || bgColour) {
               updateData.isImage = false;
               updateData.bgImageId = null;
             }
