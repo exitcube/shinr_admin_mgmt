@@ -37,3 +37,32 @@ export const createBannerValidate = {
     "missingBannerType": "You must provide either text+bgColour or bgImageId.",
   })
 };
+export const updateBannerValidate = {
+  body: Joi.object({
+    text: Joi.string().trim().min(1).optional(),
+    bgColour: Joi.string().trim().min(1).optional(),
+    bgImageId: Joi.string().uuid().allow(null).optional(),
+    buttonText: Joi.string().trim().optional(),
+    targetValue: Joi.string().trim().optional()
+  })
+    .min(1)
+    .custom((value, helpers) => {
+      const hasText = !!value.text;
+      const hasColour = !!value.bgColour;
+      const hasImage = !!value.bgImageId;
+
+      if ((hasText || hasColour) && hasImage) {
+        return helpers.error("textBannerNoImage");
+      }
+
+      return value;
+    })
+    .messages({
+      "object.min": "At least one field must be provided to update the banner.",
+      "string.min": "Empty values are not allowed.",
+      "textBannerNoImage": "You cannot provide bgImageId together with text or bgColour. Either only bgImageId or text and bgcolour together"
+    })
+};
+
+
+
