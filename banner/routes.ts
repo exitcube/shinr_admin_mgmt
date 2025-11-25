@@ -9,7 +9,7 @@ export default async function bannerRoutes(fastify: FastifyInstance, opts: Fasti
     fastify.get('/get-vendors',{ preHandler: [adminAuthValidationPreHandler] },handler.vendorListinghandler);
     fastify.get('/get-categories',{ preHandler: [adminAuthValidationPreHandler] },handler.categoryListinghandler);
     fastify.get('/get-status',{ preHandler: [adminAuthValidationPreHandler] },handler.statusListinghandler);
-    fastify.get('/getBanners',{ preHandler: [validation(listBannerValidate)] },handler.listbannerhandler);
-    fastify.get('/getTargetAudience',handler.targetAudienceOptionsHandler);
+    fastify.get('/getBanners',{ preHandler: [adminAuthValidationPreHandler,validation(listBannerValidate)] },handler.listbannerhandler);
+    fastify.get('/getTargetAudience',{ preHandler: [adminAuthValidationPreHandler] },handler.targetAudienceHandler);
     
 } 

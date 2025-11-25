@@ -179,7 +179,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    targetAudienceOptionsHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+    targetAudienceHandler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const configRepo = fastify.db.getRepository(BannerUserTargetConfig);
         const adminFileRepo = fastify.db.getRepository(AdminFile);
