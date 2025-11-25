@@ -63,6 +63,36 @@ export const updateBannerValidate = {
       "textBannerNoImage": "You cannot provide bgImageId together with text or bgColour. Either only bgImageId or text and bgcolour together"
     })
 };
+export const listBannerValidate = {
+  query: Joi.object({
+    search: Joi.string()
+      .min(3)
+      .optional()
+      .description('Search by title, category, vendor name, or vendor code (minimum 3 characters)'),
+
+    page: Joi.number()
+      .integer()
+      .min(1)
+      .optional()
+      .default(1)
+      .description('Page number for pagination'),
+
+    limit: Joi.number()
+      .integer()
+      .min(1)
+      .max(100)
+      .optional()
+      .default(10)
+      .description('Number of items per page'),
+
+    sortOrder: Joi.string()
+      .valid('ASC', 'DESC','asc','desc')
+      .optional()
+      .default('ASC')
+      .description('Sort order by display sequence')
+  })
+};
+
 
 
 

@@ -13,3 +13,9 @@ export type UpdateBannerBody = {
     buttonText?: string;
     targetValue?: string;
 }
+export type ListBannerQuery={
+    search?:string;
+    page?: number;
+    limit?: number;
+    sortOrder?: 'ASC' | 'DESC';
+}
