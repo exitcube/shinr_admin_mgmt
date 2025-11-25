@@ -19,21 +19,21 @@ export enum BannerTargetAudience{
 }
 
 export const BannerStatus={
-    ACTIVE:{ displayValue: 'active', value: 'ACTIVE' },
-    DRAFT:{ displayValue: 'draft', value: 'DRAFT' },
-    EXPIRED:{ displayValue: 'expired', value: 'EXPIRED' },
+    ACTIVE:{ displayValue: 'Active', value: 'ACTIVE' },
+    DRAFT:{ displayValue: 'Draft', value: 'DRAFT' },
+    EXPIRED:{ displayValue: 'Expired', value: 'EXPIRED' },
 }
 
 export  const BannerReviewStatus={
-    APPROVED:{ displayValue: 'approved', value: 'APPROVED' },
-    REJECTED:{ displayValue: 'rejected', value: 'REJECTED' },
-    PENDING:{ displayValue: 'pending', value: 'PENDING' },
+    APPROVED:{ displayValue: 'Approved', value: 'APPROVED' },
+    REJECTED:{ displayValue: 'Rejected', value: 'REJECTED' },
+    PENDING:{ displayValue: 'Pending', value: 'PENDING' },
 }
 
  
 
 export const BannerCategory = {
-  FESTIVAL: { displayValue: 'festival', value: 'FESTIVAL' },
-  COME_BACK_USER: { displayValue: 'comeBackUser', value: 'COME_BACK_USER' },
-  MIN_CARWASH: { displayValue: 'minCarWash', value: 'MIN_CARWASH' }
+  FESTIVAL: { displayValue: 'Festival', value: 'FESTIVAL' },
+  COME_BACK_USER: { displayValue: 'Come Back User', value: 'COME_BACK_USER' },
+  MIN_CARWASH: { displayValue: 'Min Car Wash', value: 'MIN_CARWASH' }
 } 
