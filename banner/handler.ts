@@ -1,153 +1,118 @@
-import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions } from 'fastify';
-import { Banner } from '../models/index';
-import { CreateBannerBody, UpdateBannerBody } from './type';
-import { createSuccessResponse } from '../utils/response';
-import { APIError } from '../types/errors';
+import {FastifyInstance,FastifyReply,FastifyRequest,FastifyPluginOptions,} from "fastify";
+import { Banner, Vendor } from "../models/index";
+import { CreateBannerBody, UpdateBannerBody } from "./type";
+import {createSuccessResponse,createPaginatedResponse,} from "../utils/response";
+import { APIError } from "../types/errors";
+import { ILike } from "typeorm";
+import {
+  BannerCategory,
+  BannerReviewStatus,
+  BannerStatus,
+} from "../utils/constant";
 
-export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions):any {
-    return {
+export default function controller(fastify: FastifyInstance,opts: FastifyPluginOptions): any {
+  return {
+    vendorListinghandler: async ( request: FastifyRequest<{ Body: CreateBannerBody }>, reply: FastifyReply): Promise<void> => {
+      try {
+        const { search, page = 1, limit = 10 } = request.query as any;
 
-        createbannerhandler: async (
-            request: FastifyRequest<{ Body: CreateBannerBody }>,
-            reply: FastifyReply
-        ): Promise<void> => {
-            try {
-                const { text, bgColour, bgImageId, buttonText, targetValue } = request.body;
+        const vendorRepo = fastify.db.getRepository(Vendor);
 
-
-                const bannerRepo = fastify.db.getRepository(Banner);
-
-                const isImage = bgImageId ? true : false;
-
-                const newBanner = bannerRepo.create({
-                    text,
-                    bgColour,
-                    bgImageId,
-                    buttonText,
-                    targetValue,
-                    isImage,
-                    isActive: true
-                });
-
-                await bannerRepo.save(newBanner);
-
-                reply.status(201).send(
-                    createSuccessResponse("Banner created successfully")
-                );
-            }
-            catch (error) {
-                throw new APIError(
-                    (error as Error).message || 'Failed to create banner',
-                    500,
-                    "BANNER_CREATION_FAILED",
-                    true,
-                    "Failed to create banner. Please try again later."
-                );
-            }
-        },
-
-        updatebannerhandler: async (
-          request: FastifyRequest<{ Body: UpdateBannerBody }>,
-          reply: FastifyReply
-        ): Promise<void> => {
-          try {
-            const { id } = request.query as any;
-            const { text, bgColour, bgImageId, buttonText, targetValue } = request.body;
-        
-            const bannerRepo = fastify.db.getRepository(Banner);
-        
-            const existingbanner = await bannerRepo.findOne({
-              where: { id, isActive: true }
-            });
-        
-            if (!existingbanner) {
-              throw new APIError(
-                `Banner with id ${id} not found`,
-                404,
-                "BANNER_NOT_FOUND",
-                true,
-                "The banner you are trying to update does not exist."
-              );
-            }
-            const updateData: any = {
-              text: text ?? existingbanner.text,
-              bgColour: bgColour ?? existingbanner.bgColour,
-              bgImageId: bgImageId ?? existingbanner.bgImageId,
-              buttonText: buttonText ?? existingbanner.buttonText,
-              targetValue: targetValue ?? existingbanner.targetValue,
-              isImage: existingbanner.isImage
-            };
-            if (bgImageId) {
-              updateData.isImage = true;
-              updateData.text = null;
-              updateData.bgColour = null;
-            }
-            else  if(text || bgColour){
-              if(existingbanner.isImage && !(text && bgColour)){
-                throw new APIError(
-                  "Image banner cannot be updated using text or bgColour alone. Provide both text and bgColour to convert it into a text banner.",
-                  400,
-                  "INVALID_UPDATE_FOR_IMAGE_BANNER"
-                )
-              }
-              updateData.isImage = false;
-              updateData.bgImageId = null;
-            }
-        
-            await bannerRepo.update({ id }, updateData);
-        
-            reply.status(200).send(
-              createSuccessResponse("Banner updated successfully")
-            );
-          }
-          catch (error) {
-            throw new APIError(
-              (error as Error).message || 'Failed to update banner',
-              500,
-              "BANNER_UPDATE_FAILED",
-              true,
-              "Failed to update banner. Please try again later."
-            );
-          }
+        const where: any = {};
+        if (search) {
+          where.name = ILike(`%${search}%`);
         }
-        ,
 
-        deletebannerhandler: async (
-            request: FastifyRequest,
-            reply: FastifyReply
-          ): Promise<void> => {
-            try {
-              const { id } = request.query as any;
+        const [vendors, total] = await vendorRepo.findAndCount({
+          where,
+          order: { name: "asc" },
+          skip: (page - 1) * limit,
+          take: limit,
+        });
 
-              const bannerRepo = fastify.db.getRepository(Banner);
-          
-              const existingbanner = await bannerRepo.findOne({ where: { id, isActive: true } });
-          
-              if (!existingbanner) {
-                throw new APIError(
-                  `Banner not found`,
-                  404,
-                  "BANNER_NOT_FOUND",
-                  true,
-                  "The banner you are trying to delete does not exist."
-                );
-              }
-              await bannerRepo.update({ id }, { isActive: false });
-          
-              reply.status(200).send(
-                createSuccessResponse("Banner deleted successfully")
-              );
-            }
-            catch (error) {
-              throw new APIError(
-                (error as Error).message || 'Failed to delete banner',
-                500,
-                "BANNER_DELETE_FAILED",
-                true,
-                "Failed to delete banner. Please try again later."
-              );
-            }
-          }
+        const vendorList = vendors.map((v: Vendor) => ({
+          id: v.id,
+          uuid: v.uuid,
+          name: v.name,
+          email: v.email,
+          mobile: v.mobile,
+          isActive: v.isActive,
+          vendorCode: v.vendorCode,
+          createdAt: v.createdAt,
+        }));
 
-    }
+        reply
+          .status(200)
+          .send(createPaginatedResponse(vendorList, total, page, limit));
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to search Vendors",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Vendor_Searching_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to search vendors"
+        );
+      }
+    },
+    categoryListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+      try {
+        const { search, page = 1, limit = 10 } = request.query as any;
+
+        let categoryList = Object.values(BannerCategory);
+        if (search) {
+          categoryList = categoryList.filter((c) =>
+            c.toLowerCase().includes(search.toLowerCase())
+          );
+        }
+
+        reply
+          .status(200)
+          .send(
+            createPaginatedResponse(
+              categoryList,
+              categoryList.length,
+              page,
+              limit
+            )
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to search Category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Category_Fetching_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to FetchCategory vendors"
+        );
+      }
+    },
+    statusListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+      try {
+        const statusList = Object.values(BannerStatus).map((s) => ({
+          displayName: s.replace(/_/g, " "),
+          value: s,
+        }));
+        const reviewStatusList = Object.values(BannerReviewStatus).map((s) => ({
+          displayName: s.replace(/_/g, " "),
+          value: s,
+        }));
+
+        reply
+          .status(200)
+          .send(
+            createSuccessResponse(
+              { statusList, reviewStatusList },
+              "Status ans review List fetched succesfully"
+            )
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to fetch status List",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "StatusList_Fetching_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to fetch statusList"
+        );
+      }
+    },
+  };
 }
