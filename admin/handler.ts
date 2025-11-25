@@ -57,6 +57,7 @@ export default function controller( fastify: FastifyInstance, opts: FastifyPlugi
           userId: adminUser.id,
           userUUId: adminUser.uuid,
           tokenId: adminToken.id,
+          role:adminUser.role,
         });
         const refreshTokenExpiry = new Date(
           Date.now() +

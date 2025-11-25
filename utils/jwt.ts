@@ -38,6 +38,6 @@ export async function signAdminAccessToken(payload : adminAccessTokenPayloadType
 
 export async function verifyAdminAccessToken(token: string) {
   const { payload } = await jwtVerify(token, ACCESS_TOKEN_SECRET, { algorithms: ["HS256"] });
-  return payload as { userId: number; userUUId: string;  jti: string; tokenId: number};
+  return payload as { userId: number; userUUId: string;  jti: string; tokenId: number,role:string};
 }
 
