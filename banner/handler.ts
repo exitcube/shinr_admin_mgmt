@@ -1,36 +1,75 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions } from 'fastify';
-import { Banner } from '../models/index';
-import { CreateBannerBody, UpdateBannerBody } from './type';
+import { Banner,BannerAudienceType,BannerUserTarget,BannerUserTargetConfig } from '../models/index';
+import { createBannerBody } from './type';
 import { createSuccessResponse } from '../utils/response';
 import { APIError } from '../types/errors';
+import { createBannerValidateSchema } from './validators';
+import { BannerTargetAudience } from '../utils/constant';
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions):any {
     return {
 
-        createbannerhandler: async (
-            request: FastifyRequest<{ Body: CreateBannerBody }>,
-            reply: FastifyReply
-        ): Promise<void> => {
+        createbannerhandler: async (request: FastifyRequest<{ Body: createBannerBody }>,reply: FastifyReply): Promise<void> => {
             try {
-                const { text, bgColour, bgImageId, buttonText, targetValue } = request.body;
 
 
-                const bannerRepo = fastify.db.getRepository(Banner);
+               const bannerRepo = fastify.db.getRepository(Banner);
+                const bannerUserTargetConfigRepo=fastify.db.getRepository(BannerUserTargetConfig);
+               const bannerAudienceTypeRepo=fastify.db.getRepository(BannerAudienceType);
+               const bannerUserTargetRepo=fastify.db.getRepository(BannerUserTarget);
+              
 
+                const { title ,text, bgColour, bgImageId, buttonText,
+                       buttonColour,category,vendorId,owner,homePageView,
+                       displaySequence,targetAudience,targetValue,endTime,startTime,audienceSelection
+                       } = request.body;
+                 
                 const isImage = bgImageId ? true : false;
 
+                 
                 const newBanner = bannerRepo.create({
+                    title,
                     text,
                     bgColour,
+                    isImage,
                     bgImageId,
                     buttonText,
+                    buttonColour,
+                    category,
+                    vendorId,
+                    owner,
+                    homePageView,
+                    displaySequence,
+                    startTime,
+                    endTime,
                     targetValue,
-                    isImage,
-                    isActive: true
                 });
-
                 await bannerRepo.save(newBanner);
 
+            const newBannerUserTargetConfig=bannerUserTargetConfigRepo.create({
+              value:audienceSelection,
+              category:targetAudience
+            });
+            await bannerUserTargetConfigRepo.save(newBannerUserTargetConfig);
+
+            const newBannerAudienceType=bannerAudienceTypeRepo.create({
+              bannerId:newBanner.id,
+              bannerConfigId:newBannerUserTargetConfig.id,
+            });
+            await bannerAudienceTypeRepo.save(newBannerAudienceType);
+
+                 if(targetAudience==BannerTargetAudience.MANUAL)
+                 {
+
+                 }
+                 else if(targetAudience==BannerTargetAudience.SPECIALRULES)
+                 {
+
+                 }
+                 else if(targetAudience==BannerTargetAudience.EVERYONE)
+                 {
+                  
+                 }
                 reply.status(201).send(
                     createSuccessResponse("Banner created successfully")
                 );
@@ -46,108 +85,6 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             }
         },
 
-        updatebannerhandler: async (
-          request: FastifyRequest<{ Body: UpdateBannerBody }>,
-          reply: FastifyReply
-        ): Promise<void> => {
-          try {
-            const { id } = request.query as any;
-            const { text, bgColour, bgImageId, buttonText, targetValue } = request.body;
-        
-            const bannerRepo = fastify.db.getRepository(Banner);
-        
-            const existingbanner = await bannerRepo.findOne({
-              where: { id, isActive: true }
-            });
-        
-            if (!existingbanner) {
-              throw new APIError(
-                `Banner with id ${id} not found`,
-                404,
-                "BANNER_NOT_FOUND",
-                true,
-                "The banner you are trying to update does not exist."
-              );
-            }
-            const updateData: any = {
-              text: text ?? existingbanner.text,
-              bgColour: bgColour ?? existingbanner.bgColour,
-              bgImageId: bgImageId ?? existingbanner.bgImageId,
-              buttonText: buttonText ?? existingbanner.buttonText,
-              targetValue: targetValue ?? existingbanner.targetValue,
-              isImage: existingbanner.isImage
-            };
-            if (bgImageId) {
-              updateData.isImage = true;
-              updateData.text = null;
-              updateData.bgColour = null;
-            }
-            else  if(text || bgColour){
-              if(existingbanner.isImage && !(text && bgColour)){
-                throw new APIError(
-                  "Image banner cannot be updated using text or bgColour alone. Provide both text and bgColour to convert it into a text banner.",
-                  400,
-                  "INVALID_UPDATE_FOR_IMAGE_BANNER"
-                )
-              }
-              updateData.isImage = false;
-              updateData.bgImageId = null;
-            }
-        
-            await bannerRepo.update({ id }, updateData);
-        
-            reply.status(200).send(
-              createSuccessResponse("Banner updated successfully")
-            );
-          }
-          catch (error) {
-            throw new APIError(
-              (error as Error).message || 'Failed to update banner',
-              500,
-              "BANNER_UPDATE_FAILED",
-              true,
-              "Failed to update banner. Please try again later."
-            );
-          }
-        }
-        ,
-
-        deletebannerhandler: async (
-            request: FastifyRequest,
-            reply: FastifyReply
-          ): Promise<void> => {
-            try {
-              const { id } = request.query as any;
-
-              const bannerRepo = fastify.db.getRepository(Banner);
-          
-              const existingbanner = await bannerRepo.findOne({ where: { id, isActive: true } });
-          
-              if (!existingbanner) {
-                throw new APIError(
-                  `Banner not found`,
-                  404,
-                  "BANNER_NOT_FOUND",
-                  true,
-                  "The banner you are trying to delete does not exist."
-                );
-              }
-              await bannerRepo.update({ id }, { isActive: false });
-          
-              reply.status(200).send(
-                createSuccessResponse("Banner deleted successfully")
-              );
-            }
-            catch (error) {
-              throw new APIError(
-                (error as Error).message || 'Failed to delete banner',
-                500,
-                "BANNER_DELETE_FAILED",
-                true,
-                "Failed to delete banner. Please try again later."
-              );
-            }
-          }
 
     }
 }
