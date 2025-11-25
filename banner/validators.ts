@@ -1,68 +1,66 @@
 import Joi from "joi";
 
-export const createBannerValidate = {
-  body: Joi.object({
-    text: Joi.string().allow(null).empty('').optional(),
-    bgColour: Joi.string().allow(null).empty('').optional(),
-    bgImageId: Joi.string().uuid().allow(null).empty('').optional(),
-    buttonText: Joi.string().required(),
-    targetValue: Joi.string().required(),
-  })
-  .custom((value, helpers) => {
-    
-    const hasText = !!value.text;
-    const hasColour = !!value.bgColour;
-    const hasImage = !!value.bgImageId;
+import { BannerCategory } from "../utils/constant";
+import { BannerStatus } from "../utils/constant";
+import { BannerReviewStatus } from "../utils/constant";
 
-    if (hasText) {
-      if (!hasColour) {
-        return helpers.error("textRequiresColour");
-      }
-      if (hasImage) {
-        return helpers.error("textBannerNoImage");
-      }
-    }
-    if (hasImage) {
-      return value;
-    }
-    if (!hasText && !hasImage) {
-      return helpers.error("missingBannerType");
-    }
+export const bannerFilterValidate = {
+  query: Joi.object({
+    searchByCategory: Joi.string()
+      .valid(
+        BannerCategory.FESTIVAL,
+        BannerCategory.COME_BACK_USER,
+        BannerCategory.MIN_CARWASH
+      )
+      .optional()
+      .messages({
+        "string.pattern.base":
+          "category search term can only contaim FESTIVAL,COME_BACK_USER,MIN_CAR_WASH",
+      }),
 
-    return value;
-  })
-  .messages({
-    "textRequiresColour": "When using text banners, bgColour is required.",
-    "textBannerNoImage": "bgImageId must not be provided when using text banners.",
-    "missingBannerType": "You must provide either text+bgColour or bgImageId.",
-  })
+    vendorId: Joi.number().integer().optional().messages({
+      "number.base": "vendorId must be a number",
+    }),
+
+    status: Joi.string()
+      .valid(BannerStatus.ACTIVE, BannerStatus.DRAFT, BannerStatus.EXPIRED)
+      .optional()
+      .messages({
+        "string.pattern.base": "status should be ACTIVE ,DRAFT,EXPIRED",
+      }),
+
+    reviewStatus: Joi.string()
+      .valid(
+        BannerReviewStatus.APPROVED,
+        BannerReviewStatus.PENDING,
+        BannerReviewStatus.REJECTED
+      )
+      .optional()
+      .messages({
+        "string.pattern.base":
+          "ReviewStatus should be APPROVED ,PENDING,REJECTED",
+      }),
+    startTime: Joi.date().iso().optional().messages({
+      "date.base": "Start time must be a valid date",
+      "date.format": "Start time must be in ISO format",
+      "any.required": "Start time is required",
+    }),
+    endTime: Joi.date()
+      .iso()
+      .optional()
+      .messages({
+        "date.base": "End time must be a valid date",
+        "date.format": "End time must be in ISO format",
+        "date.greater": "End time must be greater than Start time",
+        "any.required": "End time is required",
+      }),
+
+    page: Joi.number().integer().min(1).optional().default(1),
+    limit: Joi.number().integer().min(1).optional().default(10),
+
+    sortOrder: Joi.string()
+      .valid("ASC", "DESC", "asc", "desc")
+      .optional()
+      .default("ASC"),
+  }),
 };
-export const updateBannerValidate = {
-  body: Joi.object({
-    text: Joi.string().trim().min(1).optional(),
-    bgColour: Joi.string().trim().min(1).optional(),
-    bgImageId: Joi.string().uuid().allow(null).optional(),
-    buttonText: Joi.string().trim().optional(),
-    targetValue: Joi.string().trim().optional()
-  })
-    .min(1)
-    .custom((value, helpers) => {
-      const hasText = !!value.text;
-      const hasColour = !!value.bgColour;
-      const hasImage = !!value.bgImageId;
-
-      if ((hasText || hasColour) && hasImage) {
-        return helpers.error("textBannerNoImage");
-      }
-
-      return value;
-    })
-    .messages({
-      "object.min": "At least one field must be provided to update the banner.",
-      "string.min": "Empty values are not allowed.",
-      "textBannerNoImage": "You cannot provide bgImageId together with text or bgColour. Either only bgImageId or text and bgcolour together"
-    })
-};
-
-
-

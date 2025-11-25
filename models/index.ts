@@ -10,6 +10,11 @@ import { Service } from './Service';
 import { AdminToken } from './AdminToken';
 import { AdminFile } from './AdminFile';
 import { File } from './File';
+import { BannerAudienceType } from './BannerAudienceType';
+import { BannerUserTarget } from './BannerUserTarget';
+import { BannerUserTargetConfig } from './BannerUserTargetConfig';
+import { Vendor } from './Vendor';
+import { VendorFile } from './VendorFile';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -25,23 +30,14 @@ export const entities = [
     Service,
     AdminToken,
     AdminFile,
-    File
+    File,
+    BannerAudienceType,
+    BannerUserTarget,
+     BannerUserTargetConfig,
+     Vendor,
+    VendorFile
 ];
 
-// Entities owned by this microservice (managed by migrations here)
-export const ownedEntities = [
-
-        Car,
-        CarCategory,
-        CarMake,
-        AdminUser,
-        Banner,
-        Service,
-        AdminToken,
-        AdminFile,
-        File
-
-];
 
 // Export individual entities and types
 export { User, type User as UserType } from './User';
@@ -56,4 +52,10 @@ export { Service, type Service as ServiceType } from './Service';
 export { AdminToken, type AdminToken as AdminTokenType } from './AdminToken';
 export { AdminFile, type AdminFile as AdminFileType } from './AdminFile';
 export { File, type File as FileType } from './File';
+export { BannerAudienceType,type BannerAudienceType as BannerAudienceTypeType} from './BannerAudienceType';
+export { BannerUserTarget,type BannerUserTarget as BannerUserTargetType} from './BannerUserTarget';
+export { BannerUserTargetConfig,type BannerUserTargetConfig as BannerUserTargetConfigType} from './BannerUserTargetConfig';
+export { Vendor, type Vendor as VendorType } from './Vendor';
+export { VendorFile, type VendorFile as VendorFileType } from './VendorFile';
+
 

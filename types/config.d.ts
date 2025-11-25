@@ -60,6 +60,12 @@ export interface AuthenticatedUser {
   tokenId: number;
 }
 
+export interface AdminAuthenticatedUser {
+  userId: number;
+  userUUId: string;
+  tokenId: number;
+}
+
 export type adminRefreshTokenPayloadType = {
   tokenId: number;
   userUUId: string;
