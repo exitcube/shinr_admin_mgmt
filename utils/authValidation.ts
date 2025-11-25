@@ -182,6 +182,7 @@ export async function adminAuthValidationPreHandler(
                 userId: payload.userId,
                 userUUId: payload.userUUId,
                 tokenId: payload.tokenId,
+                role:payload.role,
             };
             (request as any).user = adminUserInfo;
         } catch (jwtError: any) {

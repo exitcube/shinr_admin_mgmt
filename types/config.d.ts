@@ -64,6 +64,7 @@ export interface AdminAuthenticatedUser {
   userId: number;
   userUUId: string;
   tokenId: number;
+  role:string,
 }
 
 export type adminRefreshTokenPayloadType = {
@@ -75,6 +76,7 @@ export type adminAccessTokenPayloadType = {
   userId: number;
   userUUId: string;
   tokenId: number;
+  role:string;
 }
 
 export type accessTokenPayloadType = {

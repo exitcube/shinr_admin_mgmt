@@ -32,13 +32,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
 
         const vendorList = vendors.map((v: Vendor) => ({
           id: v.id,
-          uuid: v.uuid,
           name: v.name,
-          email: v.email,
-          mobile: v.mobile,
-          isActive: v.isActive,
-          vendorCode: v.vendorCode,
-          createdAt: v.createdAt,
         }));
 
         reply
@@ -61,15 +55,19 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         let categoryList = Object.values(BannerCategory);
         if (search) {
           categoryList = categoryList.filter((c) =>
-            c.toLowerCase().includes(search.toLowerCase())
+            c.displayValue.toLowerCase().includes(search.toLowerCase())
           );
         }
+       const finalResponse = categoryList.map((s) => ({
+          displayName: s.displayValue,
+          value: s.value,
+        }));
 
         reply
           .status(200)
           .send(
             createPaginatedResponse(
-              categoryList,
+              finalResponse,
               categoryList.length,
               page,
               limit
@@ -88,12 +86,12 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
     statusListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
       try {
         const statusList = Object.values(BannerStatus).map((s) => ({
-          displayName: s.replace(/_/g, " "),
-          value: s,
+          displayName: s.displayValue,
+          value: s.value
         }));
         const reviewStatusList = Object.values(BannerReviewStatus).map((s) => ({
-          displayName: s.replace(/_/g, " "),
-          value: s,
+          displayName: s.displayValue,
+          value: s.value,
         }));
 
         reply
