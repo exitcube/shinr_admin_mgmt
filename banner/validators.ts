@@ -64,5 +64,18 @@ export const updateBannerValidate = {
     })
 };
 
+export const listBannerValidate = {
+  query: Joi.object({
+    search: Joi.string()
+      .min(3)
+      .optional()
+      .description('Search by title, category, vendor name, or vendor code (minimum 3 characters)'),
+    sortOrder: Joi.string()
+      .valid('ASC', 'DESC','asc','desc')
+      .optional()
+      .default('ASC')
+      .description('Sort order by display sequence')
+  })
+};
 
 
