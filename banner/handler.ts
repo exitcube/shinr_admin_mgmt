@@ -236,15 +236,13 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
 
       } catch (error) {
-        const err = error as any;
-
-        throw new APIError(
-          err?.message || "Failed to fetch target audience options",
-          err?.statusCode || 500,
-          err?.code || "TARGET_OPTIONS_FAILED",
-          true,
-          err?.publicMessage || "Unable to load target audience data"
-        );
+          throw new APIError(
+            (error as APIError).message || 'Failed to fetch banners',
+            (error as APIError).statusCode || 500,
+            (error as APIError).code || 'BANNER_LISTING_FAILED',
+            true,
+            (error as APIError).publicMessage || 'Failed to fetch banners'
+          );
       }
     }
 
