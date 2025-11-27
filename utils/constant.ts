@@ -42,4 +42,14 @@ export const TargetAudience = {
     MANUAL: { displayName: "Manual", value: "MANUAL" },
     EVERYONE: { displayName: "Everyone", value: "EVERYONE" },
     SPECIAL_RULE: { displayName: "Special Rules", value: "SPECIAL_RULE" }
-  };
+};
+export const Manual = {
+    SELECTED_CUST: { displayName: "Selected Customer", value: "SELECTED_CUST" },
+    LOCATION_BASED: { displayName: "Location Based", value: "LOCATION_BASED" },
+};
+export const SpecialRules = {
+    NEW_USER: { displayName: "New User", value: "NEW_USER" },
+    FIRST_CAR_WASH: { displayName: "First_Car_Wash", value: "FIRST_CAR_WASH" },
+    FIRST_ANY_SERVICE: { displayName: "First_Any_Service", value: "FIRST_ANY_WASH" }
+
+};

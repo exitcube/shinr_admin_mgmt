@@ -8,6 +8,8 @@ import {
   BannerCategory,
   BannerReviewStatus,
   BannerStatus,
+  Manual,
+  SpecialRules,
   TargetAudience
 } from "../utils/constant";
 
@@ -115,8 +117,6 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
     },
     targetAudienceHandler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const configRepo = fastify.db.getRepository(BannerUserTargetConfig);
-        const adminFileRepo = fastify.db.getRepository(AdminFile);
 
         const everyone = {
           displayName: TargetAudience.EVERYONE.displayName,
@@ -124,42 +124,27 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
           items: []
         };
 
-        const manualFiles = await adminFileRepo.find({
-          where: { category: TargetAudience.MANUAL.value, isActive: true },
-          relations: ["file"]
-        });
-
-        const manualItems = manualFiles.map((f: any) => ({
-          isFile: true,
-          displayName: f.file.fileName,
-          value: f.file.id
-        }));
-
         const manual = {
           displayName: TargetAudience.MANUAL.displayName,
-          value: TargetAudience.MANUAL.value,
-          items: manualItems
+          items: Object.values(Manual).map(m => ({
+            isFile: true,
+            displayName: m.displayName,
+            value: m.value
+          }))
         };
-
-        const specialRules = await configRepo.find({
-          where: { category: TargetAudience.SPECIAL_RULE.value, isActive: true }
-        });
-
-        const specialItems = specialRules.map((r: any) => ({
-          displayName: r.displayText,
-          value: r.value
-        }));
 
         const specialRulesResponse = {
           displayName: TargetAudience.SPECIAL_RULE.displayName,
-          value: TargetAudience.SPECIAL_RULE.value,
-          items: specialItems
+          items: Object.values(SpecialRules).map(s => ({
+            displayName: s.displayName,
+            value: s.value
+          }))
         };
 
         const data = {
           everyone,
           manual,
-          specialRules: specialRulesResponse
+          specialRulesResponse
         };
 
         reply.status(200).send(
