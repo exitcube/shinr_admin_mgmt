@@ -87,7 +87,49 @@ export const approveBannerValidate = {
 
 export const deleteBannerValidate = {
   params: Joi.object({
-    id: Joi.number().integer().positive().required(),
+    id: Joi.string().pattern(/^\d+$/).required().messages({
+      'string.pattern.base': 'id must be a valid positive integer'
+    }),
+  })
+};
+
+export const createBannerCategoryValidate = {
+  body: Joi.object({
+    value: Joi.string().required().trim().uppercase().pattern(/^[A-Z_]+$/).messages({
+      'string.pattern.base': 'value must contain only uppercase letters and underscores',
+      'any.required': 'value is required'
+    }),
+    displayValue: Joi.string().required().trim().min(1).messages({
+      'any.required': 'displayValue is required',
+      'string.min': 'displayValue cannot be empty'
+    }),
+  })
+};
+
+export const updateBannerCategoryValidate = {
+  params: Joi.object({
+    id: Joi.string().pattern(/^\d+$/).required().messages({
+      'string.pattern.base': 'id must be a valid positive integer'
+    }),
+  }),
+  body: Joi.object({
+    value: Joi.string().trim().uppercase().pattern(/^[A-Z_]+$/).optional().messages({
+      'string.pattern.base': 'value must contain only uppercase letters and underscores'
+    }),
+    displayValue: Joi.string().trim().min(1).optional().messages({
+      'string.min': 'displayValue cannot be empty'
+    }),
+    isActive: Joi.boolean().optional(),
+  }).min(1).messages({
+    'object.min': 'At least one field must be provided to update the banner category'
+  })
+};
+
+export const deleteBannerCategoryValidate = {
+  params: Joi.object({
+    id: Joi.string().pattern(/^\d+$/).required().messages({
+      'string.pattern.base': 'id must be a valid positive integer'
+    }),
   })
 };
 

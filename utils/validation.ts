@@ -22,7 +22,7 @@ export function validatePayload(schema: Joi.ObjectSchema, data: any, path?: stri
   return { success: true };
 }
 
-export function validation(schemaMap: { body?: Joi.ObjectSchema; query?: Joi.ObjectSchema }) {
+export function validation(schemaMap: { body?: Joi.ObjectSchema; query?: Joi.ObjectSchema; params?: Joi.ObjectSchema }) {
   return async function (request: any, reply: any) {
     if (schemaMap.body) {
       const result = validatePayload(schemaMap.body, request.body, request.url, request.method);
@@ -33,6 +33,13 @@ export function validation(schemaMap: { body?: Joi.ObjectSchema; query?: Joi.Obj
     }
     if (schemaMap.query) {
       const result = validatePayload(schemaMap.query, request.query, request.url, request.method);
+      if (!result.success) {
+        reply.status(422).send(result);
+        return reply;
+      }
+    }
+    if (schemaMap.params) {
+      const result = validatePayload(schemaMap.params, request.params, request.url, request.method);
       if (!result.success) {
         reply.status(422).send(result);
         return reply;

@@ -6,6 +6,7 @@ import { CarMake } from './CarMake';
 import { CarCategory } from './CarCategory';
 import { AdminUser } from './AdminUser';
 import { Banner } from './Banner';
+import { BannerCategory } from './BannerCategory';
 import { Service } from './Service';
 import { AdminToken } from './AdminToken';
 import { AdminFile } from './AdminFile';
@@ -24,6 +25,7 @@ export const entities = [
     CarMake,
     AdminUser,
     Banner,
+    BannerCategory,
     Service,
     AdminToken,
     AdminFile,
@@ -42,6 +44,7 @@ export { CarCategory, type CarCategory as CarCategoryType } from './CarCategory'
 export { CarMake, type CarMake as CarMakeType } from './CarMake';
 export { AdminUser,type AdminUser as AdminUserType} from './AdminUser'
 export { Banner,type Banner as BannerType} from './Banner'
+export { BannerCategory,type BannerCategory as BannerCategoryType} from './BannerCategory'
 export { Service, type Service as ServiceType } from './Service';
 export { AdminToken, type AdminToken as AdminTokenType } from './AdminToken';
 export { AdminFile, type AdminFile as AdminFileType } from './AdminFile';

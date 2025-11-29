@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import controller from './handler';
 import { authValidationPreHandler,adminAuthValidationPreHandler } from '../utils/authValidation';
 import { validation } from '../utils/validation';
-import { createBannerValidate,updateBannerValidate,approveBannerValidate,deleteBannerValidate } from './validators';
+import { createBannerValidate,updateBannerValidate,approveBannerValidate,deleteBannerValidate,createBannerCategoryValidate,updateBannerCategoryValidate,deleteBannerCategoryValidate } from './validators';
 
 export default async function bannerRoutes(fastify: FastifyInstance, opts: FastifyPluginOptions) {
     const handler = controller(fastify, opts);
@@ -12,4 +12,9 @@ export default async function bannerRoutes(fastify: FastifyInstance, opts: Fasti
     fastify.post('/create', { preHandler: [adminAuthValidationPreHandler, validation(createBannerValidate)] }, handler.createBannerHandler);
     fastify.put('/:id/approve', { preHandler: [adminAuthValidationPreHandler, validation(approveBannerValidate)] }, handler.approveBannerHandler);
     fastify.delete('/:id', { preHandler: [adminAuthValidationPreHandler, validation(deleteBannerValidate)] }, handler.deleteBannerHandler);
+    
+    // Banner Category CRUD routes
+    fastify.post('/category/create', { preHandler: [adminAuthValidationPreHandler, validation(createBannerCategoryValidate)] }, handler.createBannerCategoryHandler);
+    fastify.put('/category/:id', { preHandler: [adminAuthValidationPreHandler, validation(updateBannerCategoryValidate)] }, handler.updateBannerCategoryHandler);
+    fastify.delete('/category/:id', { preHandler: [adminAuthValidationPreHandler, validation(deleteBannerCategoryValidate)] }, handler.deleteBannerCategoryHandler);
 } 

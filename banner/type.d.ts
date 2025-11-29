@@ -26,3 +26,14 @@ export type UpdateBannerBody = {
 export type ApproveBannerBody = {
     status?: string;
 }
+
+export type CreateBannerCategoryBody = {
+    value: string;
+    displayValue: string;
+}
+
+export type UpdateBannerCategoryBody = {
+    value?: string;
+    displayValue?: string;
+    isActive?: boolean;
+}

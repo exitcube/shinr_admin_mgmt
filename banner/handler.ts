@@ -1,11 +1,10 @@
 import {FastifyInstance,FastifyReply,FastifyRequest,FastifyPluginOptions,} from "fastify";
-import { Banner, Vendor, AdminFile } from "../models/index";
-import { CreateBannerBody, UpdateBannerBody, ApproveBannerBody } from "./type";
+import { Banner, Vendor, AdminFile, BannerCategory } from "../models/index";
+import { CreateBannerBody, UpdateBannerBody, ApproveBannerBody, CreateBannerCategoryBody, UpdateBannerCategoryBody } from "./type";
 import {createSuccessResponse,createPaginatedResponse,} from "../utils/response";
 import { APIError, NotFoundError } from "../types/errors";
 import { ILike } from "typeorm";
 import {
-  BannerCategory,
   BannerReviewStatus,
   BannerStatus,
 } from "../utils/constant";
@@ -53,15 +52,24 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
-        let categoryList = Object.values(BannerCategory);
+        const categoryRepo = fastify.db.getRepository(BannerCategory);
+        const where: any = { isActive: true };
+        
         if (search) {
-          categoryList = categoryList.filter((c) =>
-            c.displayValue.toLowerCase().includes(search.toLowerCase())
-          );
+          where.displayValue = ILike(`%${search}%`);
         }
-       const finalResponse = categoryList.map((s) => ({
-          displayName: s.displayValue,
-          value: s.value,
+
+        const [categories, total] = await categoryRepo.findAndCount({
+          where,
+          order: { displayValue: "asc" },
+          skip: (page - 1) * limit,
+          take: limit,
+        });
+
+        const finalResponse = categories.map((c: BannerCategory) => ({
+          id: c.id,
+          displayName: c.displayValue,
+          value: c.value,
         }));
 
         reply
@@ -69,7 +77,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
           .send(
             createPaginatedResponse(
               finalResponse,
-              categoryList.length,
+              total,
               page,
               limit
             )
@@ -352,6 +360,203 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
           (error as APIError).code || "BANNER_DELETION_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to delete banner"
+        );
+      }
+    },
+    createBannerCategoryHandler: async (
+      request: FastifyRequest<{ Body: CreateBannerCategoryBody }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { value, displayValue } = request.body;
+
+        const categoryRepo = fastify.db.getRepository(BannerCategory);
+
+        // Check if category with same value already exists
+        const existingCategory = await categoryRepo.findOne({
+          where: { value },
+        });
+
+        if (existingCategory) {
+          throw new APIError(
+            "Category with this value already exists",
+            400,
+            "CATEGORY_ALREADY_EXISTS",
+            true,
+            "A banner category with this value already exists"
+          );
+        }
+
+        const category = categoryRepo.create({
+          value,
+          displayValue,
+          isActive: true,
+        });
+
+        const savedCategory = await categoryRepo.save(category);
+
+        reply
+          .status(201)
+          .send(
+            createSuccessResponse(
+              savedCategory,
+              "Banner category created successfully"
+            )
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to create banner category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "BANNER_CATEGORY_CREATION_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to create banner category"
+        );
+      }
+    },
+    updateBannerCategoryHandler: async (
+      request: FastifyRequest<{ Body: UpdateBannerCategoryBody; Params: { id: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { id } = request.params;
+        const { value, displayValue, isActive } = request.body;
+
+        const categoryId = parseInt(id);
+        if (isNaN(categoryId)) {
+          throw new APIError(
+            "Invalid category ID",
+            400,
+            "INVALID_CATEGORY_ID",
+            true,
+            "Please provide a valid category ID"
+          );
+        }
+
+        const categoryRepo = fastify.db.getRepository(BannerCategory);
+        const category = await categoryRepo.findOne({
+          where: { id: categoryId },
+        });
+
+        if (!category) {
+          throw new NotFoundError(
+            "Banner category not found",
+            "BANNER_CATEGORY_NOT_FOUND"
+          );
+        }
+
+        // Check if value is being updated and if it conflicts with existing category
+        if (value && value !== category.value) {
+          const existingCategory = await categoryRepo.findOne({
+            where: { value },
+          });
+
+          if (existingCategory) {
+            throw new APIError(
+              "Category with this value already exists",
+              400,
+              "CATEGORY_ALREADY_EXISTS",
+              true,
+              "A banner category with this value already exists"
+            );
+          }
+        }
+
+        // Update category
+        const updateData: any = {};
+        if (value !== undefined) updateData.value = value;
+        if (displayValue !== undefined) updateData.displayValue = displayValue;
+        if (isActive !== undefined) updateData.isActive = isActive;
+
+        await categoryRepo.update(categoryId, updateData);
+
+        const updatedCategory = await categoryRepo.findOne({
+          where: { id: categoryId },
+        });
+
+        reply
+          .status(200)
+          .send(
+            createSuccessResponse(
+              updatedCategory,
+              "Banner category updated successfully"
+            )
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to update banner category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "BANNER_CATEGORY_UPDATE_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to update banner category"
+        );
+      }
+    },
+    deleteBannerCategoryHandler: async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { id } = request.params;
+
+        const categoryId = parseInt(id);
+        if (isNaN(categoryId)) {
+          throw new APIError(
+            "Invalid category ID",
+            400,
+            "INVALID_CATEGORY_ID",
+            true,
+            "Please provide a valid category ID"
+          );
+        }
+
+        const categoryRepo = fastify.db.getRepository(BannerCategory);
+        const category = await categoryRepo.findOne({
+          where: { id: categoryId },
+        });
+
+        if (!category) {
+          throw new NotFoundError(
+            "Banner category not found",
+            "BANNER_CATEGORY_NOT_FOUND"
+          );
+        }
+
+        // Check if category is being used by any banners
+        const bannerRepo = fastify.db.getRepository(Banner);
+        const bannersUsingCategory = await bannerRepo.count({
+          where: { category: category.value, isActive: true },
+        });
+
+        if (bannersUsingCategory > 0) {
+          throw new APIError(
+            `Cannot delete category. It is being used by ${bannersUsingCategory} active banner(s)`,
+            400,
+            "CATEGORY_IN_USE",
+            true,
+            "This category cannot be deleted as it is currently being used by active banners"
+          );
+        }
+
+        // Soft delete by setting isActive to false
+        await categoryRepo.update(categoryId, {
+          isActive: false,
+        });
+
+        reply
+          .status(200)
+          .send(
+            createSuccessResponse(
+              { id: categoryId, deleted: true },
+              "Banner category deleted successfully"
+            )
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to delete banner category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "BANNER_CATEGORY_DELETION_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to delete banner category"
         );
       }
     },
