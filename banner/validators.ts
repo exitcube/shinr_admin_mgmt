@@ -4,9 +4,21 @@ export const createBannerValidate = {
   body: Joi.object({
     text: Joi.string().allow(null).empty('').optional(),
     bgColour: Joi.string().allow(null).empty('').optional(),
-    bgImageId: Joi.string().uuid().allow(null).empty('').optional(),
+    bgImageId: Joi.alternatives().try(
+      Joi.number().integer().positive(),
+      Joi.string().pattern(/^\d+$/).allow(null).empty('')
+    ).optional(),
     buttonText: Joi.string().required(),
     targetValue: Joi.string().required(),
+    title: Joi.string().required(),
+    category: Joi.string().allow(null).empty('').optional(),
+    owner: Joi.string().allow(null).empty('').optional(),
+    vendorId: Joi.string().allow(null).empty('').optional(),
+    homePageView: Joi.boolean().optional(),
+    displaySequence: Joi.number().optional(),
+    startTime: Joi.string().isoDate().allow(null).empty('').optional(),
+    endTime: Joi.string().isoDate().allow(null).empty('').optional(),
+    buttonColour: Joi.string().allow(null).empty('').optional(),
   })
   .custom((value, helpers) => {
     
@@ -41,7 +53,10 @@ export const updateBannerValidate = {
   body: Joi.object({
     text: Joi.string().trim().min(1).optional(),
     bgColour: Joi.string().trim().min(1).optional(),
-    bgImageId: Joi.string().uuid().allow(null).optional(),
+    bgImageId: Joi.alternatives().try(
+      Joi.number().integer().positive(),
+      Joi.string().pattern(/^\d+$/).allow(null).empty('')
+    ).optional(),
     buttonText: Joi.string().trim().optional(),
     targetValue: Joi.string().trim().optional()
   })
@@ -62,6 +77,18 @@ export const updateBannerValidate = {
       "string.min": "Empty values are not allowed.",
       "textBannerNoImage": "You cannot provide bgImageId together with text or bgColour. Either only bgImageId or text and bgcolour together"
     })
+};
+
+export const approveBannerValidate = {
+  body: Joi.object({
+    status: Joi.string().valid('ACTIVE', 'DRAFT', 'EXPIRED').optional(),
+  })
+};
+
+export const deleteBannerValidate = {
+  params: Joi.object({
+    id: Joi.number().integer().positive().required(),
+  })
 };
 
 
