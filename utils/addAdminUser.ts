@@ -4,7 +4,7 @@ import path from "path";
 import { parse } from "csv-parse/sync";
 import bcrypt from "bcrypt";
 import { AdminUser } from "../models/index";
-import { Result } from "../type"
+import { Result } from "../types"
 import { ALLOWED_ROLES } from "./constant";
 
 export async function addAdminUsers(
@@ -50,6 +50,8 @@ export async function addAdminUsers(
         .trim();
       const adminRole= (rawRow.Role ?? rawRow.role ?? "").toString().trim();
       const password = (rawRow.Password ?? rawRow.password ?? "").toString();
+      const email =  (rawRow.Email ?? rawRow.email ?? "").toString().trim();
+      const empCode =  (rawRow.EmpCode ?? rawRow.empCode ?? "").toString().trim();
 
       if (!ALLOWED_ROLES.includes(adminRole)) {
         result.skipped.push({
@@ -64,6 +66,15 @@ export async function addAdminUsers(
         result.skipped.push({
           row: rowIndex,
           reason: "Missing Password",
+          userName,
+          role:adminRole,
+        });
+        continue;
+      }
+      if (!empCode) {
+        result.skipped.push({
+          row: rowIndex,
+          reason: "Missing EmpCode",
           userName,
           role:adminRole,
         });
@@ -87,6 +98,8 @@ export async function addAdminUsers(
         userName,
         role:adminRole,
         password: hashed,
+        email:email,
+        empCode:empCode
       });
 
       await adminRepo.save(newUser);
@@ -95,6 +108,8 @@ export async function addAdminUsers(
         row: rowIndex,
         userName: newUser.userName,
         role: newUser.role,
+        email:newUser.email,
+        empCode:newUser.empCode
       });
     } catch (err: any) {
       result.errors.push({ row: rowIndex, error: err.message ?? String(err) });

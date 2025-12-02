@@ -1,6 +1,6 @@
-UserName,Role,Password
-razimmm900,ADMIN,razim456
-shayizz400,SUPER_ADMIN,shayiz123
-baaaloo,developer,82772r
-nadir123,SUPER_ADMIN,shayiz123
-adarsh,EMPLOYEE, 
+UserName,Role,Password,Email,EmpCode
+razimmm900,ADMIN,razim456,razmrz666@gmail.com,111
+shayizz400,SUPER_ADMIN,shayiz123,shayiz007@gmail.com,8999
+baaaloo,developer,82772r,krrrr@gmail.com, 
+nadir123,SUPER_ADMIN,shayiz123,naddd@gmail.com, 
+adarsh,EMPLOYEE, , , 
