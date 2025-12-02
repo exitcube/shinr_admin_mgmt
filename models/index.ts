@@ -13,6 +13,9 @@ import { File } from './File';
 import { Vendor } from './Vendor';
 import { VendorFile } from './VendorFile';
 import { BannerCategory } from './BannerCategory';
+import { BannerUserTarget } from './BannerUserTarget';
+import { BannerAudienceType } from './BannerAudienceType';
+import { BannerUserTargetConfig } from './BannerUserTargetConfig';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -31,7 +34,11 @@ export const entities = [
     File,
     Vendor,
     VendorFile,
-    BannerCategory
+    BannerCategory,
+    BannerUserTarget,
+    BannerAudienceType,
+    BannerUserTargetConfig,
+    // Product,
 ];
 
 
@@ -50,4 +57,8 @@ export { AdminFile, type AdminFile as AdminFileType } from './AdminFile';
 export { File, type File as FileType } from './File';
 export { Vendor, type Vendor as VendorType } from './Vendor';
 export { BannerCategory, type BannerCategory as BannerCategoryType } from './BannerCategory';
+export { BannerUserTarget, type BannerUserTarget as BannerUserTargetType } from './BannerUserTarget';   
+export { BannerAudienceType, type BannerAudienceType as BannerAudienceTypeType } from './BannerAudienceType';
+export { BannerUserTargetConfig, type BannerUserTargetConfig as BannerUserTargetConfigType } from './BannerUserTargetConfig';
+
 

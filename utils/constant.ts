@@ -37,3 +37,10 @@ export const BannerCategory = {
   COME_BACK_USER: { displayValue: 'Come Back User', value: 'COME_BACK_USER' },
   MIN_CARWASH: { displayValue: 'Min Car Wash', value: 'MIN_CARWASH' }
 } 
+
+
+export const TargetAudience = {
+    MANUAL: { displayName: "Manual", value: "MANUAL" },
+    EVERYONE: { displayName: "Everyone", value: "EVERYONE" },
+    SPECIAL_RULE: { displayName: "Special Rules", value: "SPECIAL_RULE" }
+};
