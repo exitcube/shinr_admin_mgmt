@@ -1,18 +1,17 @@
-import {FastifyInstance,FastifyReply,FastifyRequest,FastifyPluginOptions,} from "fastify";
-import { Banner, Vendor } from "../models/index";
+import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
+import { Banner, Vendor, BannerCategory } from "../models/index";
 import { CreateBannerBody, UpdateBannerBody } from "./type";
-import {createSuccessResponse,createPaginatedResponse,} from "../utils/response";
+import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
 import {
-  BannerCategory,
   BannerReviewStatus,
   BannerStatus,
 } from "../utils/constant";
 
-export default function controller(fastify: FastifyInstance,opts: FastifyPluginOptions): any {
+export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
-    vendorListinghandler: async ( request: FastifyRequest<{ Body: CreateBannerBody }>, reply: FastifyReply): Promise<void> => {
+    vendorListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -48,31 +47,32 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    categoryListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+    categoryListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
-        let categoryList = Object.values(BannerCategory);
+        const bannerCategoryRepo = fastify.db.getRepository(BannerCategory);
+
+        const where: any = { isActive: true };
         if (search) {
-          categoryList = categoryList.filter((c) =>
-            c.displayValue.toLowerCase().includes(search.toLowerCase())
-          );
+          where.displayText = ILike(`%${search}%`);
         }
-       const finalResponse = categoryList.map((s) => ({
-          displayName: s.displayValue,
-          value: s.value,
+
+        const [bannerCategories, total] = await bannerCategoryRepo.findAndCount({
+          where,
+          order: { id: "ASC" },
+          skip: (page - 1) * limit,
+          take: limit,
+        });
+
+        const bannerCategoriesList = bannerCategories.map((v: BannerCategory) => ({
+          id: v.id,
+          name: v.displayText,
         }));
 
         reply
           .status(200)
-          .send(
-            createPaginatedResponse(
-              finalResponse,
-              categoryList.length,
-              page,
-              limit
-            )
-          );
+          .send(createPaginatedResponse(bannerCategoriesList, total, page, limit));
       } catch (error) {
         throw new APIError(
           (error as APIError).message || "Failed to search Category",
@@ -83,7 +83,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    statusListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+    statusListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const statusList = Object.values(BannerStatus).map((s) => ({
           displayName: s.displayValue,
