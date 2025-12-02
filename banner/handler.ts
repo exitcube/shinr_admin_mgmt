@@ -1,7 +1,7 @@
-import {FastifyInstance,FastifyReply,FastifyRequest,FastifyPluginOptions,} from "fastify";
-import { Banner, Vendor,BannerCategory } from "../models/index";
+import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
+import { Banner, Vendor, BannerCategory } from "../models/index";
 import { CreateBannerBody, UpdateBannerBody } from "./type";
-import {createSuccessResponse,createPaginatedResponse,} from "../utils/response";
+import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
 import {
@@ -9,9 +9,9 @@ import {
   BannerStatus,
 } from "../utils/constant";
 
-export default function controller(fastify: FastifyInstance,opts: FastifyPluginOptions): any {
+export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
-    vendorListinghandler: async ( request: FastifyRequest , reply: FastifyReply): Promise<void> => {
+    vendorListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -47,13 +47,13 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    categoryListinghandler: async (request: FastifyRequest ,reply: FastifyReply): Promise<void> => {
+    categoryListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
         const bannerCategoryRepo = fastify.db.getRepository(BannerCategory);
 
-        const where: any = {isActive: true};
+        const where: any = { isActive: true };
         if (search) {
           where.displayText = ILike(`%${search}%`);
         }
@@ -73,7 +73,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         reply
           .status(200)
           .send(createPaginatedResponse(bannerCategoriesList, total, page, limit));
-      }catch (error) {
+      } catch (error) {
         throw new APIError(
           (error as APIError).message || "Failed to search Category",
           (error as APIError).statusCode || 500,
@@ -83,7 +83,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    statusListinghandler: async (request: FastifyRequest ,reply: FastifyReply): Promise<void> => {
+    statusListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const statusList = Object.values(BannerStatus).map((s) => ({
           displayName: s.displayValue,
