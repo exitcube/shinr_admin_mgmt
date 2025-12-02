@@ -1,39 +1,29 @@
 import { Entity, PrimaryGeneratedColumn,Column,CreateDateColumn,UpdateDateColumn,JoinColumn,OneToOne,ManyToOne, Index } from "typeorm";
 import { AdminFile,AdminUser } from '../models';
 import { Vendor } from "./Vendor";
+import { BannerCategory } from "./BannerCategory";
 
 @Entity("banner")
 export class Banner {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ default: false })
-  isImage: boolean;
-
   @Column({ nullable: true })
   bgImageId: number;
 
   @OneToOne(() => AdminFile, { onDelete: "CASCADE" })
   @JoinColumn({ name: "bgImageId" })
-  bgImage: AdminFile;
-
-  @Column({ type: "text", nullable: true })
-  text: string;
-
-  @Column({ nullable: true })
-  bgColour: string;
-
-  @Column({ nullable: true })
-  buttonText: string;
-
-  @Column({ nullable: true })
-  buttonColour: string;
+  adminFile: AdminFile;
 
   @Column({ nullable: false })
   title: string;
 
   @Column({ nullable: true })
-  category: string;
+  categoryId: string;
+
+  @ManyToOne(() => BannerCategory, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "categoryId" })
+  bannerCategory: BannerCategory;
 
   @Column({ nullable: true })
   owner: string;
@@ -66,14 +56,14 @@ export class Banner {
 
   @ManyToOne(() => AdminUser, { onDelete: "CASCADE" })
   @JoinColumn({ name: "createdBy" })
-  createdByUser: AdminUser;
+  createdByAdminUser: AdminUser;
 
   @Column({ nullable: true })
   updatedBy: number;
 
   @ManyToOne(() => AdminUser, { onDelete: "CASCADE" })
   @JoinColumn({ name: "updatedBy" })
-  updatedByUser: AdminUser;
+  updatedByAdminUser: AdminUser;
 
   @Column({ nullable: true })
   status: string;
@@ -89,7 +79,7 @@ export class Banner {
 
   @ManyToOne(() => AdminUser, { onDelete: "CASCADE" })
   @JoinColumn({ name: "approvedBy" })
-  approvedByUser: AdminUser;
+  approvedByAdminUser: AdminUser;
 
   @CreateDateColumn()
   createdAt: Date;
