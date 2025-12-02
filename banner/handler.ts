@@ -1,7 +1,7 @@
-import {FastifyInstance,FastifyReply,FastifyRequest,FastifyPluginOptions,} from "fastify";
-import { Banner, Vendor,AdminFile,BannerUserTargetConfig } from "../models/index";
+import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
+import { Banner, Vendor, AdminFile, BannerUserTargetConfig } from "../models/index";
 import { CreateBannerBody, UpdateBannerBody } from "./type";
-import {createSuccessResponse,createPaginatedResponse,} from "../utils/response";
+import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
 import {
@@ -13,9 +13,9 @@ import {
   TargetAudience
 } from "../utils/constant";
 
-export default function controller(fastify: FastifyInstance,opts: FastifyPluginOptions): any {
+export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
-    vendorListinghandler: async ( request: FastifyRequest<{ Body: CreateBannerBody }>, reply: FastifyReply): Promise<void> => {
+    vendorListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>, reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -51,7 +51,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    categoryListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+    categoryListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>, reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -61,7 +61,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
             c.displayValue.toLowerCase().includes(search.toLowerCase())
           );
         }
-       const finalResponse = categoryList.map((s) => ({
+        const finalResponse = categoryList.map((s) => ({
           displayName: s.displayValue,
           value: s.value,
         }));
@@ -86,7 +86,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    statusListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+    statusListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>, reply: FastifyReply): Promise<void> => {
       try {
         const statusList = Object.values(BannerStatus).map((s) => ({
           displayName: s.displayValue,
@@ -118,38 +118,36 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
     targetAudienceHandler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
 
-        const everyone = {
-          displayName: TargetAudience.EVERYONE.displayName,
-          value: TargetAudience.EVERYONE.value,
-          items: []
-        };
+        const bannerUserTargetConfig = fastify.db.getRepository(BannerUserTargetConfig);
 
-        const manual = {
-          displayName: TargetAudience.MANUAL.displayName,
-          items: Object.values(Manual).map(m => ({
-            isFile: true,
-            displayName: m.displayName,
-            value: m.value
-          }))
-        };
+        const data = await bannerUserTargetConfig
+          .createQueryBuilder("b")
+          .select([
+            "b.category AS category",
+            "CAST(JSON_ARRAYAGG(JSON_OBJECT('id', b.id, 'displayText', b.displayText, 'value', b.value)) AS JSON) AS items"
+          ])
+          .where("b.isActive = true")
+          .groupBy("b.category")
+          .getRawMany();
 
-        const specialRulesResponse = {
-          displayName: TargetAudience.SPECIAL_RULE.displayName,
-          items: Object.values(SpecialRules).map(s => ({
-            displayName: s.displayName,
-            value: s.value
-          }))
-        };
+        const result = data.map((r: any) => {
+          const match = TargetAudience[r.category as keyof typeof TargetAudience];
+          return {
+            category: r.category,
+            displayText: match ? match.displayName : r.category, // fallback
+            items: r.items
+          };
+});
 
-        const data = {
-          everyone,
-          manual,
-          specialRulesResponse
-        };
+
+
+       
+
+        
 
         reply.status(200).send(
           createSuccessResponse(
-            data,
+            result,
             "Target audience options fetched successfully"
           )
         );
@@ -163,6 +161,6 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
           (error as APIError).publicMessage || 'Failed to fetch banners'
         );
       }
-    } 
+    }
   };
 }
