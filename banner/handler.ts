@@ -1,8 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import { Banner, Vendor, BannerCategory } from "../models/index";
 import { CreateBannerBody, UpdateBannerCategoryBody } from "./type";
 import { Banner, Vendor, BannerCategory,BannerUserTargetConfig } from "../models/index";
-import { CreateBannerBody, UpdateBannerBody } from "./type";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
