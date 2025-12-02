@@ -12,3 +12,5 @@ export default async function bannerRoutes(fastify: FastifyInstance, opts: Fasti
     fastify.put('/update-banner-category',{ preHandler: [adminAuthValidationPreHandler,validation(updateBannerCategoryValidate)]},handler.updateBannerCategoryHandler);
     fastify.delete('/delete-banner-category',{ preHandler: [adminAuthValidationPreHandler] },handler.deleteBannerCategoryHandler);
 }  
+    fastify.get('/getTargetAudience',{ preHandler: [adminAuthValidationPreHandler] },handler.targetAudienceHandler);
+} 

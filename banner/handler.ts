@@ -1,12 +1,15 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import { Banner, Vendor, BannerCategory } from "../models/index";
 import { CreateBannerBody, UpdateBannerCategoryBody } from "./type";
+import { Banner, Vendor, BannerCategory,BannerUserTargetConfig } from "../models/index";
+import { CreateBannerBody, UpdateBannerBody } from "./type";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
 import {
   BannerReviewStatus,
   BannerStatus,
+  TargetAudience
 } from "../utils/constant";
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
@@ -188,5 +191,53 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
+        targetAudienceHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+
+        const bannerUserTargetConfig = fastify.db.getRepository(BannerUserTargetConfig);
+
+        const data = await bannerUserTargetConfig
+          .createQueryBuilder("b")
+          .select([
+            "b.category AS category",
+              `json_agg(
+            json_build_object(
+              'id', b.id,
+              'displayText', b.displayText,
+              'value', b.value,
+              'isFile', b."isFile"
+            )
+        ) AS items`
+          ])
+          .where("b.isActive = true")
+          .groupBy("b.category")
+          .getRawMany();
+
+        const result = data.map((r: any) => {
+          const match = TargetAudience[r.category as keyof typeof TargetAudience];
+          return {
+            category: r.category,
+            displayText: match ? match.displayName : r.category, // fallback
+            items: r.items
+          };
+        });
+        
+        reply.status(200).send(
+          createSuccessResponse(
+            result,
+            "Target audience options fetched successfully"
+          )
+        );
+
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || 'Failed to fetch banners',
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || 'BANNER_LISTING_FAILED',
+          true,
+          (error as APIError).publicMessage || 'Failed to fetch banners'
+        );
+      }
+    }
   };
 }
