@@ -1,4 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
+import { Banner, Vendor, BannerCategory } from "../models/index";
+import { CreateBannerBody, UpdateBannerCategoryBody } from "./type";
 import { Banner, Vendor, BannerCategory,BannerUserTargetConfig } from "../models/index";
 import { CreateBannerBody, UpdateBannerBody } from "./type";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
@@ -12,7 +14,10 @@ import {
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
-    vendorListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    vendorListinghandler: async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -48,7 +53,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    categoryListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    categoryListinghandler: async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -59,21 +67,27 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           where.displayText = ILike(`%${search}%`);
         }
 
-        const [bannerCategories, total] = await bannerCategoryRepo.findAndCount({
-          where,
-          order: { id: "ASC" },
-          skip: (page - 1) * limit,
-          take: limit,
-        });
+        const [bannerCategories, total] = await bannerCategoryRepo.findAndCount(
+          {
+            where,
+            order: { id: "ASC" },
+            skip: (page - 1) * limit,
+            take: limit,
+          }
+        );
 
-        const bannerCategoriesList = bannerCategories.map((v: BannerCategory) => ({
-          id: v.id,
-          name: v.displayText,
-        }));
+        const bannerCategoriesList = bannerCategories.map(
+          (v: BannerCategory) => ({
+            id: v.id,
+            name: v.displayText,
+          })
+        );
 
         reply
           .status(200)
-          .send(createPaginatedResponse(bannerCategoriesList, total, page, limit));
+          .send(
+            createPaginatedResponse(bannerCategoriesList, total, page, limit)
+          );
       } catch (error) {
         throw new APIError(
           (error as APIError).message || "Failed to search Category",
@@ -84,11 +98,14 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    statusListinghandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    statusListinghandler: async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
       try {
         const statusList = Object.values(BannerStatus).map((s) => ({
           displayName: s.displayValue,
-          value: s.value
+          value: s.value,
         }));
         const reviewStatusList = Object.values(BannerReviewStatus).map((s) => ({
           displayName: s.displayValue,
@@ -110,6 +127,67 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "StatusList_Fetching_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to fetch statusList"
+        );
+      }
+    },
+    updateBannerCategoryHandler: async (request: FastifyRequest<{Body:UpdateBannerCategoryBody}>,reply: FastifyReply): Promise<void> => {
+      try {
+        const { id, updatingText } = request.body as UpdateBannerCategoryBody;
+
+        const bannercategoryRepo = fastify.db.getRepository(BannerCategory);
+        const exists = await bannercategoryRepo.findOne({
+          where: { id, isActive: true },
+        });
+        if (!exists) {
+          throw new APIError("Invalid category id", 400, "INVALID_ID", true);
+        }
+        await bannercategoryRepo.update({ id }, { displayText: updatingText });
+        reply
+          .status(200)
+          .send(
+            createSuccessResponse(
+              { updated: 1 },
+              "banner Category updated Succesfully"
+            )
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to update Banner Category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Banner Category_Updating_FAILED",
+          true,
+          (error as APIError).publicMessage ||
+            "Failed to update Banner Category"
+        );
+      }
+    },
+     deleteBannerCategoryHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+      try {
+        const id = (request.query as any).id;
+        const bannercategoryRepo = fastify.db.getRepository(BannerCategory);
+        const exists = await bannercategoryRepo.findOne({
+          where: { id, isActive: true },
+        });
+        if (!exists) {
+          throw new APIError("Invalid category id", 400, "INVALID_ID", true);
+        }
+        await bannercategoryRepo.update({ id }, { isActive: false });
+        reply
+          .status(200)
+          .send(
+            createSuccessResponse(
+              { deleted: 1 },
+              "banner Category deleted Succesfully"
+            )
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to delete Banner Category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Banner Category_Deleting_FAILED",
+          true,
+          (error as APIError).publicMessage ||
+            "Failed to deleted Banner Category"
         );
       }
     },
