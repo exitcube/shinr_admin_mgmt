@@ -28,6 +28,12 @@ export class AdminUser{
     @Column({ nullable: false })
     role:string;
 
+    @Column({ nullable: true })
+    email:string;
+
+    @Column({ nullable: false })
+    empCode:string;
+
     @Column({ default: false })
     isActive: boolean;
   
