@@ -11,7 +11,7 @@ import {
 
 export default function controller(fastify: FastifyInstance,opts: FastifyPluginOptions): any {
   return {
-    vendorListinghandler: async ( request: FastifyRequest<{ Body: CreateBannerBody }>, reply: FastifyReply): Promise<void> => {
+    vendorListinghandler: async ( request: FastifyRequest , reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -47,7 +47,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    categoryListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+    categoryListinghandler: async (request: FastifyRequest ,reply: FastifyReply): Promise<void> => {
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
@@ -83,7 +83,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
         );
       }
     },
-    statusListinghandler: async (request: FastifyRequest<{ Body: CreateBannerBody }>,reply: FastifyReply): Promise<void> => {
+    statusListinghandler: async (request: FastifyRequest ,reply: FastifyReply): Promise<void> => {
       try {
         const statusList = Object.values(BannerStatus).map((s) => ({
           displayName: s.displayValue,
