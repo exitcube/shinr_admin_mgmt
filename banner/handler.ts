@@ -1,11 +1,10 @@
 import {FastifyInstance,FastifyReply,FastifyRequest,FastifyPluginOptions,} from "fastify";
-import { Banner, Vendor } from "../models/index";
+import { Banner, Vendor,BannerCategory } from "../models/index";
 import { CreateBannerBody, UpdateBannerBody } from "./type";
 import {createSuccessResponse,createPaginatedResponse,} from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
 import {
-  BannerCategory,
   BannerReviewStatus,
   BannerStatus,
 } from "../utils/constant";
@@ -52,28 +51,29 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
       try {
         const { search, page = 1, limit = 10 } = request.query as any;
 
-        let categoryList = Object.values(BannerCategory);
+        const bannerCategoryRepo = fastify.db.getRepository(BannerCategory);
+
+        const where: any = {};
         if (search) {
-          categoryList = categoryList.filter((c) =>
-            c.displayValue.toLowerCase().includes(search.toLowerCase())
-          );
+          where.displayText = ILike(`%${search}%`);
         }
-       const finalResponse = categoryList.map((s) => ({
-          displayName: s.displayValue,
-          value: s.value,
+
+        const [bannerCategories, total] = await bannerCategoryRepo.findAndCount({
+          where,
+          order: { id: "ASC" },
+          skip: (page - 1) * limit,
+          take: limit,
+        });
+
+        const bannerCategoriesList = bannerCategories.map((v: BannerCategory) => ({
+          id: v.id,
+          name: v.displayText,
         }));
 
         reply
           .status(200)
-          .send(
-            createPaginatedResponse(
-              finalResponse,
-              categoryList.length,
-              page,
-              limit
-            )
-          );
-      } catch (error) {
+          .send(createPaginatedResponse(bannerCategoriesList, total, page, limit));
+      }catch (error) {
         throw new APIError(
           (error as APIError).message || "Failed to search Category",
           (error as APIError).statusCode || 500,

@@ -12,6 +12,7 @@ import { AdminFile } from './AdminFile';
 import { File } from './File';
 import { Vendor } from './Vendor';
 import { VendorFile } from './VendorFile';
+import { BannerCategory } from './BannerCategory';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -29,7 +30,8 @@ export const entities = [
     AdminFile,
     File,
     Vendor,
-    VendorFile
+    VendorFile,
+    BannerCategory
 ];
 
 
@@ -47,4 +49,5 @@ export { AdminToken, type AdminToken as AdminTokenType } from './AdminToken';
 export { AdminFile, type AdminFile as AdminFileType } from './AdminFile';
 export { File, type File as FileType } from './File';
 export { Vendor, type Vendor as VendorType } from './Vendor';
+export { BannerCategory, type BannerCategory as BannerCategoryType } from './BannerCategory';
 
