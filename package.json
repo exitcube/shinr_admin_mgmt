@@ -16,7 +16,7 @@
     "schema:sync": "npm run typeorm schema:sync -- -d config/database.ts",
     "schema:drop": "npm run typeorm schema:drop -- -d config/database.ts",
     "precommit-check": "npm run lint && npm run build-check",
-    "lint": "eslint \"**/*.ts\" --fix",
+    "lint": "eslint \"**/*.ts\"",
     "build-check": "tsc --noEmit"
   },
   "keywords": [],
