@@ -53,7 +53,7 @@ export default function controller(fastify: FastifyInstance,opts: FastifyPluginO
 
         const bannerCategoryRepo = fastify.db.getRepository(BannerCategory);
 
-        const where: any = {};
+        const where: any = {isActive: true};
         if (search) {
           where.displayText = ILike(`%${search}%`);
         }
