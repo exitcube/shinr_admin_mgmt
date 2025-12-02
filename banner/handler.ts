@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import { CreateBannerBody, UpdateBannerCategoryBody } from "./type";
+import { CreateBannerBody, UpdateBannerCategoryBody,ListBannerQuery } from "./type";
 import { Banner, Vendor, BannerCategory,BannerUserTargetConfig } from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
@@ -9,6 +9,7 @@ import {
   BannerStatus,
   TargetAudience
 } from "../utils/constant";
+import { any } from "joi";
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
@@ -228,6 +229,87 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
 
       } catch (error) {
+        throw new APIError(
+          (error as APIError).message || 'Failed to fetch banners',
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || 'BANNER_LISTING_FAILED',
+          true,
+          (error as APIError).publicMessage || 'Failed to fetch banners'
+        );
+      }
+    },
+    listbannerhandler: async (request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const query = request.query as ListBannerQuery
+        const { search, status, reviewStatus, categoryId, vendorId, page = 1, limit = 10, sortOrder = 'ASC' } = query;
+        const bannerRepo = fastify.db.getRepository(Banner);
+
+        const where: any = {}
+        let finalWhere: any = {}
+
+        if (status) {
+          where.status = ILike(status);
+        }
+
+        if (reviewStatus) {
+          where.reviewStatus = ILike(reviewStatus);
+        }
+
+        if (categoryId) {
+          where.categoryId = categoryId;
+        }
+        if (vendorId) {
+          where.vendorId = vendorId;
+        }
+
+        if (search) {
+
+          const searchConditions: any[] = [
+            { title: ILike(`%${search}%`) },
+            { vendor: { name: ILike(`%${search}%`) } },
+            { vendor: { vendorCode: ILike(`%${search}%`) } },
+            { bannerCategory: { displayText: ILike(`%${search}%`) } },
+          ];
+
+          finalWhere = searchConditions.map((c) => ({ ...where, ...c }))
+        } else {
+          finalWhere = where;
+        }
+
+        const [banners, total] = await bannerRepo.findAndCount({
+          where: finalWhere,
+          order: { displaySequence: sortOrder },
+          skip: (page - 1) * limit,
+          take: limit,
+          relations: ['vendor', 'bannerCategory'],
+        });
+
+        const Listbanners = banners.map((banner: any) => ({
+
+          id: banner.id,
+          title: banner.title,
+          category: banner.bannerCategory?.displayText,
+          reviewStatus: banner.reviewStatus,
+          status: banner.status,
+          displaySequence: banner.displaySequence,
+          startTime: banner.startTime,
+          endTime: banner.endTime,
+          vendor: banner.vendor?.name
+
+        }));
+
+        reply.status(200).send(
+          createPaginatedResponse(
+            Listbanners,
+            total,
+            page,
+            limit
+          )
+        );
+      }
+      catch (error) {
         throw new APIError(
           (error as APIError).message || 'Failed to fetch banners',
           (error as APIError).statusCode || 500,
