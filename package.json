@@ -6,6 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "build:prod": "tsc -p tsconfig.prod.json",
+    "prepare": "husky init",
     "start": "node dist/index.js",
     "dev": "ts-node index.ts",
     "typeorm": "typeorm-ts-node-commonjs",
@@ -13,7 +14,10 @@
     "migration:run": "npm run typeorm migration:run -- -d config/database.migrations.ts",
     "migration:revert": "npm run typeorm migration:revert -- -d config/database.migrations.ts",
     "schema:sync": "npm run typeorm schema:sync -- -d config/database.ts",
-    "schema:drop": "npm run typeorm schema:drop -- -d config/database.ts"
+    "schema:drop": "npm run typeorm schema:drop -- -d config/database.ts",
+    "precommit-check": "npm run lint && npm run build-check",
+    "lint": "eslint \"**/*.ts\" --fix",
+    "build-check": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +26,13 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^24.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },
