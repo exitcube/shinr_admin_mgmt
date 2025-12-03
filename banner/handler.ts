@@ -124,7 +124,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).statusCode || 500,
           (error as APIError).code || "StatusList_Fetching_FAILED",
           true,
-          (error as APIError).publicMessage || "Failed to fetch statusList"
+          "Failed to fetch statusList"
         );
       }
     },
