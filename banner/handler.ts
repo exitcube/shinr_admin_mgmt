@@ -203,7 +203,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               'id', b.id,
               'displayText', b.displayText,
               'value', b.value,
-              'isFile', b."isFile"
+              'isFile', b."isFile",
+              'fileFieldName', b."fileFieldName"
             )
         ) AS items`
           ])
