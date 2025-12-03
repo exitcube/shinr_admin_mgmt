@@ -28,6 +28,9 @@ export class BannerUserTargetConfig {
   @Column({ default: false })
   isFile: boolean;
 
+  @Column({ nullable: true })
+  fileFieldName: string
+
   @CreateDateColumn()
   createdAt: Date;
 
