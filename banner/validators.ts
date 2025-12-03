@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { BannerReviewStatus, BannerStatus } from "../utils/constant";
+import { BannerReviewStatus, BannerStatus ,BannerOwner} from "../utils/constant";
 
  export const updateBannerCategoryValidate = {
   body: Joi.object({
@@ -70,4 +70,45 @@ export const listBannerValidate = {
   }),
 };
 
+
+export const createBannerValidateSchema =  Joi.object({
+    title: Joi.string().required(),
+    categoryId: Joi.string().required(),
+
+    owner: Joi.string()
+      .valid(BannerOwner.SHINR, BannerOwner.VENDOR)
+      .required(),
+
+    vendorId: Joi.when("owner", {
+      is: BannerOwner.VENDOR,
+      then: Joi.string().required(),
+      otherwise: Joi.forbidden(),
+    }),
+
+    targetAudienceId: Joi.string().required(),
+
+    targetValue: Joi.string().required(),
+
+    priority: Joi.string().required(),
+
+    startTime: Joi.date().required(),
+    endTime: Joi.date().required(),
+
+    homePageView: Joi.boolean().required(),
+
+    status: Joi.string()
+      .valid(
+        BannerStatus.ACTIVE.value,
+        BannerStatus.DRAFT.value,
+        BannerStatus.EXPIRED.value
+      )
+      .required(),
+  })
+    .messages({
+      "any.required": "{{#label}} is required.",
+      "any.only": "{{#label}} value is invalid.",
+      "string.base": "{{#label}} must be a string.",
+      "date.base": "{{#label}} must be a valid date.",
+      "boolean.base": "{{#label}} must be a boolean.",
+    });
 

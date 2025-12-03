@@ -1,4 +1,3 @@
-
 export const ALLOWED_ROLES:string[] = ["ADMIN", "SUPER_ADMIN", "EMPLOYEE"];
 
 export enum RefreshTokenStatus {
@@ -31,17 +30,28 @@ export  const BannerReviewStatus={
 }
 
  
-
- 
-export const BannerCategory = {
-  FESTIVAL: { displayValue: 'Festival', value: 'FESTIVAL' },
-  COME_BACK_USER: { displayValue: 'Come Back User', value: 'COME_BACK_USER' },
-  MIN_CARWASH: { displayValue: 'Min Car Wash', value: 'MIN_CARWASH' }
-} 
-
-
 export const TargetAudience = {
     MANUAL: { displayName: "Manual", value: "MANUAL" },
     EVERYONE: { displayName: "Everyone", value: "EVERYONE" },
     SPECIAL_RULE: { displayName: "Special Rules", value: "SPECIAL_RULE" }
 };
+
+
+export const FILE_PROVIDER={
+    LOCAL:'LOCAL',
+    S3:'S3'
+}
+
+export const  ADMIN_FILE_CATEGORY={
+    BANNER:'BANNER_IMAGE',
+}
+
+export const BANNER_IMAGE_ALLOWED_MIMETYPE = [
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp"
+];
+
+export const BANNER_IMAGE_MAX_SIZE = 5 * 1024 * 1024; 
+
