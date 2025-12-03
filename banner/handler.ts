@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import { CreateBannerBody, UpdateBannerCategoryBody } from "./type";
+import { CreateBannerBody, UpdateBannerCategoryBody, ListBannerQuery } from "./type";
 import { Banner, Vendor, BannerCategory,BannerUserTargetConfig } from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
@@ -228,6 +228,66 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           )
         );
 
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || 'Failed to fetch banners',
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || 'BANNER_LISTING_FAILED',
+          true,
+          (error as APIError).publicMessage || 'Failed to fetch banners'
+        );
+      }
+    },
+    listbannerhandler: async (request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { search, status, reviewStatus, categoryId, vendorId, page = 1, limit = 10, sortOrder = 'ASC' } = request.query as ListBannerQuery
+        const bannerRepo = fastify.db.getRepository(Banner);
+
+        const where: any = { isActive: true };
+
+        if (status) where.status = status;
+        if (reviewStatus) where.reviewStatus = reviewStatus;
+        if (categoryId) where.categoryId = categoryId;
+        if (vendorId) where.vendorId = vendorId;
+
+        let finalWhere: any = where;
+
+        if (search) {
+          finalWhere = [
+            { ...where, title: ILike(`%${search}%`) },
+            { ...where, vendor: { name: ILike(`%${search}%`) } },
+            { ...where, vendor: { vendorCode: ILike(`%${search}%`) } },
+            { ...where, bannerCategory: { displayText: ILike(`%${search}%`) } },
+          ];
+        } else {
+          finalWhere = where;
+        }
+
+        const [banners, total] = await bannerRepo.findAndCount({
+          where: finalWhere,
+          order: { displaySequence: sortOrder },
+          skip: (page - 1) * limit,
+          take: limit,
+          relations: ['vendor', 'bannerCategory'],
+        });
+
+        const Listbanners = banners.map((banner: any) => ({
+          id: banner.id,
+          title: banner.title,
+          category: banner.bannerCategory?.displayText,
+          reviewStatus: banner.reviewStatus,
+          status: banner.status,
+          displaySequence: banner.displaySequence,
+          startTime: banner.startTime,
+          endTime: banner.endTime,
+          vendor: banner.vendor?.name,
+        }));
+
+        reply.status(200).send(
+          createPaginatedResponse(Listbanners, total, page, limit)
+        );
       } catch (error) {
         throw new APIError(
           (error as APIError).message || 'Failed to fetch banners',
