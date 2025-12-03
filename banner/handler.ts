@@ -8,10 +8,12 @@ import {
   BannerReviewStatus,
   BannerStatus,
   TargetAudience,FILE_PROVIDER,
-  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY
+  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION
 } from "../utils/constant";
 import { createBannerValidateSchema } from "./validators";
-import { fileUpload,parseMultipart } from "../utils/fileUpload";
+import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
+import sharp from "sharp";
+
  
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
@@ -302,7 +304,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    createBannerHandler: async (request: FastifyRequest<{Body:UpdateBannerCategoryBody}>,reply: FastifyReply): Promise<void> => {
+    createBannerHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
       try {
         const adminId = (request as any).user?.userId;
         const { body, files } = await parseMultipart(request);
@@ -313,16 +315,23 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
 
         const bannerImg = files.bannerImage[0];
-         if (Object.keys(bannerImg).length === 0) {
-           throw new Error("bannerImage is required");
-         }
 
-         if (!BANNER_IMAGE_ALLOWED_MIMETYPE.includes(bannerImg.mimetype)) {
-           throw new Error("bannerImage must be PNG or JPG");
-         }
-         if (bannerImg.sizeBytes > BANNER_IMAGE_MAX_SIZE) {
-           throw new Error("bannerIMage must be less than 5MB");
-         }
+        const { width, height } = await getDimension(bannerImg);
+
+        if (width !== BANNER_IMAGE_DIMENSION.WIDTH ||height !== BANNER_IMAGE_DIMENSION.HEIGHT) {
+          throw new Error("Image must be exactly 272 × 230 pixels.");
+        }
+
+        if (Object.keys(bannerImg).length === 0) {
+          throw new Error("bannerImage is required");
+        }
+
+        if (!BANNER_IMAGE_ALLOWED_MIMETYPE.includes(bannerImg.mimetype)) {
+          throw new Error("bannerImage must be PNG or JPG");
+        }
+        if (bannerImg.sizeBytes > BANNER_IMAGE_MAX_SIZE) {
+          throw new Error("bannerIMage must be less than 5MB");
+        }
         const {
           title,
           categoryId,
@@ -334,17 +343,18 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           startTime,
           endTime,
           homePageView,
-          status,
         } = body;
 
-        
         const filePath = await fileUpload(bannerImg, adminId);
 
         const fileRepo = fastify.db.getRepository(File);
         const adminFileRepo = fastify.db.getRepository(AdminFile);
         const bannerRepo = fastify.db.getRepository(Banner);
-        const bannerUserTargetConfigRepo = fastify.db.getRepository(BannerUserTargetConfig);
-        const bannerAudienceTypeRepo =fastify.db.getRepository(BannerAudienceType);
+        const bannerUserTargetConfigRepo = fastify.db.getRepository(
+          BannerUserTargetConfig
+        );
+        const bannerAudienceTypeRepo =
+          fastify.db.getRepository(BannerAudienceType);
 
         const newFile = fileRepo.create({
           fileName: bannerImg.filename,
@@ -361,7 +371,6 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           adminId,
           fileId: newFile.id,
           category: ADMIN_FILE_CATEGORY.BANNER,
-          uploadedBy: adminId,
           isActive: true,
         });
         await adminFileRepo.save(newAdminFile);
@@ -378,19 +387,25 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           startTime,
           endTime,
           createdBy: adminId,
-          status,
+          status: BannerStatus.DRAFT.value,
         });
         await bannerRepo.save(newBanner);
 
-        const targetAudience = await bannerUserTargetConfigRepo.findOne({ where: { id: targetAudienceId,isActive:true } });
-        const isFile = targetAudience ? targetAudience.isFile : false;
-        if (!isFile) {
-          const newBannerAudeince = bannerAudienceTypeRepo.create({
-            bannerId: newBanner.id,
-            bannerConfigId: targetAudienceId,
-            isActive: true,
-          });
-          await bannerAudienceTypeRepo.save(newBannerAudeince);
+        if (targetAudienceId && Array.isArray(targetAudienceId)) {
+          for (const id of targetAudienceId) {
+            const targetAudience = await bannerUserTargetConfigRepo.findOne({
+              where: { id: id, isActive: true },
+            });
+            const isFile = targetAudience ? targetAudience.isFile : false;
+            if (!isFile) {
+              const newBannerAudeince = bannerAudienceTypeRepo.create({
+                bannerId: newBanner.id,
+                bannerConfigId: id,
+                isActive: true,
+              });
+              await bannerAudienceTypeRepo.save(newBannerAudeince);
+            }
+          }
         }
         reply
           .status(200)

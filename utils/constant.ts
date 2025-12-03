@@ -20,7 +20,6 @@ export enum BannerTargetAudience{
 export const BannerStatus={
     ACTIVE:{ displayValue: 'Active', value: 'ACTIVE' },
     DRAFT:{ displayValue: 'Draft', value: 'DRAFT' },
-    EXPIRED:{ displayValue: 'Expired', value: 'EXPIRED' },
 }
 
 export  const BannerReviewStatus={
@@ -54,4 +53,9 @@ export const BANNER_IMAGE_ALLOWED_MIMETYPE = [
 ];
 
 export const BANNER_IMAGE_MAX_SIZE = 5 * 1024 * 1024; 
+
+export const BANNER_IMAGE_DIMENSION = {
+    WIDTH: 272,
+    HEIGHT: 230
+};
 
