@@ -294,7 +294,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).statusCode || 500,
           (error as APIError).code || 'BANNER_LISTING_FAILED',
           true,
-          (error as APIError).publicMessage || 'Failed to fetch banners'
+           'Failed to fetch banners'
         );
       }
     }
