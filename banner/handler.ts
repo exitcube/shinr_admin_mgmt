@@ -1,14 +1,20 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import { CreateBannerBody, UpdateBannerCategoryBody, ListBannerQuery } from "./type";
-import { Banner, Vendor, BannerCategory,BannerUserTargetConfig } from "../models/index";
+import {  UpdateBannerCategoryBody, ListBannerQuery } from "./type";
+import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType} from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
 import {
   BannerReviewStatus,
   BannerStatus,
-  TargetAudience
+  TargetAudience,FILE_PROVIDER,
+  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION
 } from "../utils/constant";
+import { createBannerValidateSchema } from "./validators";
+import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
+import sharp from "sharp";
+
+ 
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
@@ -297,6 +303,122 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
            'Failed to fetch banners'
         );
       }
-    }
+    },
+    createBannerHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+      try {
+        const adminId = (request as any).user?.userId;
+        const { body, files } = await parseMultipart(request);
+
+        const { error } = await createBannerValidateSchema.validate(body);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        const bannerImg = files.bannerImage[0];
+
+        const { width, height } = await getDimension(bannerImg);
+
+        if (width !== BANNER_IMAGE_DIMENSION.WIDTH ||height !== BANNER_IMAGE_DIMENSION.HEIGHT) {
+          throw new Error("Image must be exactly 272 × 230 pixels.");
+        }
+
+        if (Object.keys(bannerImg).length === 0) {
+          throw new Error("bannerImage is required");
+        }
+
+        if (!BANNER_IMAGE_ALLOWED_MIMETYPE.includes(bannerImg.mimetype)) {
+          throw new Error("bannerImage must be PNG or JPG");
+        }
+        if (bannerImg.sizeBytes > BANNER_IMAGE_MAX_SIZE) {
+          throw new Error("bannerIMage must be less than 5MB");
+        }
+        const {
+          title,
+          categoryId,
+          owner,
+          vendorId,
+          targetAudienceId,
+          targetValue,
+          priority,
+          startTime,
+          endTime,
+          homePageView,
+        } = body;
+
+        const filePath = await fileUpload(bannerImg, adminId);
+
+        const fileRepo = fastify.db.getRepository(File);
+        const adminFileRepo = fastify.db.getRepository(AdminFile);
+        const bannerRepo = fastify.db.getRepository(Banner);
+        const bannerUserTargetConfigRepo = fastify.db.getRepository(
+          BannerUserTargetConfig
+        );
+        const bannerAudienceTypeRepo =
+          fastify.db.getRepository(BannerAudienceType);
+
+        const newFile = fileRepo.create({
+          fileName: bannerImg.filename,
+          storageLocation: filePath,
+          mimeType: bannerImg.mimetype,
+          sizeBytes: bannerImg.sizeBytes,
+          provider: FILE_PROVIDER.LOCAL,
+          url: `https://yourdomain.com/uploads/${bannerImg.filename}`,
+          isActive: true,
+        });
+        await fileRepo.save(newFile);
+
+        const newAdminFile = adminFileRepo.create({
+          adminId,
+          fileId: newFile.id,
+          category: ADMIN_FILE_CATEGORY.BANNER,
+          isActive: true,
+        });
+        await adminFileRepo.save(newAdminFile);
+
+        const newBanner = bannerRepo.create({
+          bgImageId: newAdminFile.id,
+          title,
+          categoryId,
+          owner,
+          vendorId,
+          homePageView,
+          displaySequence: priority,
+          targetValue,
+          startTime,
+          endTime,
+          createdBy: adminId,
+          status: BannerStatus.DRAFT.value,
+        });
+        await bannerRepo.save(newBanner);
+
+        if (targetAudienceId && Array.isArray(targetAudienceId)) {
+          for (const id of targetAudienceId) {
+            const targetAudience = await bannerUserTargetConfigRepo.findOne({
+              where: { id: id, isActive: true },
+            });
+            const isFile = targetAudience ? targetAudience.isFile : false;
+            if (!isFile) {
+              const newBannerAudeince = bannerAudienceTypeRepo.create({
+                bannerId: newBanner.id,
+                bannerConfigId: id,
+                isActive: true,
+              });
+              await bannerAudienceTypeRepo.save(newBannerAudeince);
+            }
+          }
+        }
+        reply
+          .status(200)
+          .send(createSuccessResponse(newBanner, "Banner Created Succefully"));
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to create banners",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "BANNER_CREATING_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to Create banners"
+        );
+      }
+    },
   };
 }
