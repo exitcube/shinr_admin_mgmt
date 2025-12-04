@@ -310,7 +310,7 @@ export async function superAdminRolePreHandler(
                 path: request.url,
                 method: request.method,
             },
-            "Error during role validation"
+            "The service is currently unavailable"
         );
 
         return reply.status(500).send(errorResponse);
