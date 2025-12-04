@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import {  UpdateBannerCategoryBody, ListBannerQuery } from "./type";
+import {  UpdateBannerCategoryBody, ListBannerQuery,BannerApprovalBody } from "./type";
 import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType} from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
@@ -8,7 +8,8 @@ import {
   BannerReviewStatus,
   BannerStatus,
   TargetAudience,FILE_PROVIDER,
-  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION
+  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION,
+  BANNER_APPROVAL_ACTIONS
 } from "../utils/constant";
 import { createBannerValidateSchema } from "./validators";
 import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
@@ -318,19 +319,46 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const { width, height } = await getDimension(bannerImg);
 
-        if (width !== BANNER_IMAGE_DIMENSION.WIDTH ||height !== BANNER_IMAGE_DIMENSION.HEIGHT) {
-          throw new Error("Image must be exactly 272 × 230 pixels.");
+        if (
+          width !== BANNER_IMAGE_DIMENSION.WIDTH ||
+          height !== BANNER_IMAGE_DIMENSION.HEIGHT
+        ) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_DIMENSION_INVALID",
+            false,
+            "Image must be exactly 272 × 230 pixels."
+          );
         }
 
         if (Object.keys(bannerImg).length === 0) {
-          throw new Error("bannerImage is required");
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_NOT_FOUND",
+            false,
+            "Image file is required."
+          );
         }
 
         if (!BANNER_IMAGE_ALLOWED_MIMETYPE.includes(bannerImg.mimetype)) {
-          throw new Error("bannerImage must be PNG or JPG");
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_MIMETYPE_INVALID",
+            false,
+            "Image must be PNG OR JPG pixels."
+          );
         }
         if (bannerImg.sizeBytes > BANNER_IMAGE_MAX_SIZE) {
-          throw new Error("bannerIMage must be less than 5MB");
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_SIZEBYTE_INVALID",
+            false,
+            "Image must be less than 5MB"
+          );
         }
         const {
           title,
@@ -388,6 +416,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           endTime,
           createdBy: adminId,
           status: BannerStatus.DRAFT.value,
+          reviewStatus: BannerReviewStatus.PENDING.value,
+          isActive: true,
         });
         await bannerRepo.save(newBanner);
 
@@ -417,6 +447,64 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "BANNER_CREATING_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to Create banners"
+        );
+      }
+    },
+    bannerApprovalHandler: async (request: FastifyRequest<{ Body: BannerApprovalBody }>, reply: FastifyReply): Promise<void> => {
+      try {
+        const adminId = (request as any).user?.userId;
+
+        const { bannerId, action, rejectReason } = request.body as any;
+        const bannerRepo = fastify.db.getRepository(Banner);
+        const banner = await bannerRepo.findOne({
+          where: { id: bannerId, isActive: true },
+        });
+        if (!banner) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "INVALID_ID",
+            false,
+            "Invalid banner id"
+          );
+        }
+        if (adminId === banner.createdBy) {
+          throw new APIError(
+            "Banner reveiwing failed",
+            400,
+            "UNAUTHORIZED_ACTION",
+            false,
+            "You cannot approve or reject a banner you created."
+          );
+        }
+        if (banner.reviewStatus !== BannerReviewStatus.PENDING.value || banner.status !== BannerStatus.DRAFT.value) {
+          throw new APIError(
+            "Banner already processed",
+            400,
+            "INVALID_BANNER_STATUS",
+            false,
+            "You can not approve/reject this banner anymore"
+          );
+        }
+        banner.reviewStatus = action === BANNER_APPROVAL_ACTIONS.APPROVE ? BannerReviewStatus.APPROVED.value : BannerReviewStatus.REJECTED.value;
+        banner.status = action === BANNER_APPROVAL_ACTIONS.APPROVE ? BannerStatus.ACTIVE.value : BannerStatus.DRAFT.value;
+        banner.approvedBy = adminId;
+        banner.rejectReason = action === BANNER_APPROVAL_ACTIONS.REJECT ? rejectReason : null;
+        await bannerRepo.save(banner);
+
+
+        const response = action === BANNER_APPROVAL_ACTIONS.APPROVE ? { approved: true } : { rejected: true };
+
+        reply
+          .status(200)
+          .send(createSuccessResponse(response, "Banner Approved "));
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to Approve banners",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "BANNER_APPROVING_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to Approve banners"
         );
       }
     },

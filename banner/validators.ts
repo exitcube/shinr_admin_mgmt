@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { BannerReviewStatus, BannerStatus ,BannerOwner} from "../utils/constant";
+import { BannerReviewStatus, BannerStatus ,BannerOwner, BANNER_APPROVAL_ACTIONS} from "../utils/constant";
 
  export const updateBannerCategoryValidate = {
   body: Joi.object({
@@ -105,3 +105,32 @@ export const createBannerValidateSchema = Joi.object({
   "array.base": "targetAudienceId must be an array.",
 });
 
+export const approveBannerValidation = {
+  body: Joi.object({
+    bannerId:Joi.number().required().messages({
+      "any.required": "bannerId is required.",
+      "number.base": "bannerId must be a number."
+    }),
+    action: Joi.string()
+      .valid(BANNER_APPROVAL_ACTIONS.APPROVE, BANNER_APPROVAL_ACTIONS.REJECT)
+      .required()
+      .messages({
+        "any.required": "action is required.",
+        "any.only": "action must be either 'approve' or 'reject'.",
+        "string.base": "action must be a string."
+      }),
+
+    rejectReason: Joi.string().when("action", {
+      is: "reject",
+      then: Joi.string()
+        .required()
+        .messages({
+          "any.required": "rejectReason is required when action is reject.",
+          "string.base": "rejectReason must be a string."
+        }),
+      otherwise: Joi.forbidden().messages({
+        "any.unknown": "rejectReason is allowed only when action is reject."
+      })
+    })
+  })
+};
