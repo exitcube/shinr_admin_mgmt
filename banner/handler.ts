@@ -11,7 +11,7 @@ import {
   BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION,
   BANNER_APPROVAL_ACTIONS
 } from "../utils/constant";
-import { createBannerValidateSchema } from "./validators";
+import { createBannerValidateSchema,updateBannerValidateSchema } from "./validators";
 import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
 import sharp from "sharp";
 
@@ -505,6 +505,166 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "BANNER_APPROVING_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to Approve banners"
+        );
+      }
+    },
+     updateBannerHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      try {
+        const adminId = (request as any).user?.userId;
+        const { body,files} = await parseMultipart(request);
+         const { error } = await updateBannerValidateSchema.validate(body);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        const {
+          bannerId,
+          title,
+          categoryId,
+          owner,
+          vendorId,
+          targetAudienceId,
+          targetValue,
+          priority,
+          startTime,
+          endTime,
+          homePageView,
+        } = body;
+           
+        const bannerImg = files?.bannerImage ? files.bannerImage[0] : null;
+
+        const fileRepo= fastify.db.getRepository(File);
+        const adminFileRepo= fastify.db.getRepository(AdminFile);
+        const bannerRepo= fastify.db.getRepository(Banner);
+        const bannerUserTargetConfigRepo= fastify.db.getRepository(BannerUserTargetConfig);
+        const bannerAudienceTypeRepo= fastify.db.getRepository(BannerAudienceType);
+
+        const banner= await bannerRepo.findOne({where:{id:bannerId,isActive:true}});
+
+        if (!banner) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "INVALID_ID",
+            false,
+            "Invalid banner id"
+          );
+        }
+
+        if(banner.status===BannerStatus.EXPIRED.value||banner.reviewStatus===BannerReviewStatus.REJECTED.value){
+          throw new APIError(
+            "Banneder Editing failed",
+            400,
+            "INVALID_BaNNER_STATUS",
+            false,
+            "you cant edit banner which is expired or rejected"
+          );
+        }
+
+        if(bannerImg){
+          const { width, height } = await getDimension(bannerImg);
+           if (width !== BANNER_IMAGE_DIMENSION.WIDTH ||height !== BANNER_IMAGE_DIMENSION.HEIGHT) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_DIMENSION_INVALID",
+            false,
+            "Image must be exactly 272 × 230 pixels."
+          );
+        }
+        if (!BANNER_IMAGE_ALLOWED_MIMETYPE.includes(bannerImg.mimetype)) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_MIMETYPE_INVALID",
+            false,
+            "Image must be PNG OR JPG pixels."
+          );
+        }
+        if (bannerImg.sizeBytes > BANNER_IMAGE_MAX_SIZE) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_SIZEBYTE_INVALID",
+            false,
+            "Image must be less than 5MB"
+          );
+        }
+        const adminFile= await adminFileRepo.findOne({where:{id:banner.bgImageId,isActive:true}});
+        if(adminFile){
+         await adminFileRepo.update({id:banner.bgImageId},{isActive:false});
+        await fileRepo.update({id:adminFile.fileId},{isActive:false});
+        }
+
+        const filePath = await fileUpload(bannerImg, adminId);
+
+        const newFile = fileRepo.create({
+          fileName: bannerImg.filename,
+          storageLocation: filePath,
+          mimeType: bannerImg.mimetype,
+          sizeBytes: bannerImg.sizeBytes,
+          provider: FILE_PROVIDER.LOCAL,
+          url: `https://yourdomain.com/uploads/${bannerImg.filename}`,
+          isActive: true,
+        });
+        await fileRepo.save(newFile);
+
+        const newAdminFile = adminFileRepo.create({
+          adminId,
+          fileId: newFile.id,
+          category: ADMIN_FILE_CATEGORY.BANNER,
+          isActive: true,
+        });
+        await adminFileRepo.save(newAdminFile);
+
+        banner.bgImageId=newAdminFile.id;
+      }
+      banner.title=title??banner.title;
+      banner.categoryId=categoryId??banner.categoryId;
+      banner.owner=owner??banner.owner;
+      banner.vendorId=vendorId??banner.vendorId;
+      banner.targetValue=targetValue??banner.targetValue;
+      banner.displaySequence=priority??banner.displaySequence;
+      banner.startTime=startTime??banner.startTime;
+      banner.endTime=endTime??banner.endTime;
+      banner.homePageView=homePageView??banner.homePageView;
+      banner.reviewStatus=BannerReviewStatus.PENDING.value;
+      banner.status=BannerStatus.DRAFT.value;
+
+      await bannerRepo.save(banner);
+      
+      if(targetAudienceId) await bannerAudienceTypeRepo.update({bannerId:banner.id},{isActive:false});
+     
+
+      if (targetAudienceId && Array.isArray(targetAudienceId)) {
+          for (const id of targetAudienceId) {
+            const targetAudience = await bannerUserTargetConfigRepo.findOne({
+              where: { id: id, isActive: true },
+            });
+            const isFile = targetAudience ? targetAudience.isFile : false;
+            if (!isFile) {
+              const newBannerAudeince = bannerAudienceTypeRepo.create({
+                bannerId:banner.id,
+                bannerConfigId: id,
+                isActive: true,
+              });
+              await bannerAudienceTypeRepo.save(newBannerAudeince);
+            }
+          }
+        }
+
+        reply
+          .status(200)
+          .send(createSuccessResponse({updated:true}, "Banner updated Succefully"));
+      
+       
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to update banners",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "BANNER_UPDATING_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to update banners"
         );
       }
     },
