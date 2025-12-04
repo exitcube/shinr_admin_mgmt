@@ -388,6 +388,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           endTime,
           createdBy: adminId,
           status: BannerStatus.DRAFT.value,
+          reviewStatus: BannerReviewStatus.PENDING.value,
         });
         await bannerRepo.save(newBanner);
 
@@ -417,6 +418,37 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "BANNER_CREATING_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to Create banners"
+        );
+      }
+    },
+    bannerApprovalHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+      try {
+        const bannerId=(request.query as any).id;
+        const adminId= (request as any).user?.userId;
+
+        const bannerRepo=fastify.db.getRepository(Banner);
+        const banner=await bannerRepo.findOne({where:{id:bannerId}});
+        if(!banner){
+          throw new APIError("Invalid banner id",400,"INVALID_ID",true);
+        }
+        banner.reviewStatus=BannerReviewStatus.APPROVED.value;
+        banner.status=BannerStatus.ACTIVE.value;
+        banner.approvedBy=adminId;
+        banner.isActive=true;
+
+        await bannerRepo.save(banner);
+        reply
+          .status(200)
+          .send(createSuccessResponse({ ApprovedBannerId:bannerId}, "Banner Approved "));
+        
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to Approve banners",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "BANNER_APPROVING_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to Approve banners"
         );
       }
     },
