@@ -60,3 +60,8 @@ export const BANNER_IMAGE_DIMENSION = {
     HEIGHT: 230
 };
 
+export const BANNER_APPROVAL_ACTIONS = {
+    APPROVE: 'approve',
+    REJECT: 'reject'
+};
+

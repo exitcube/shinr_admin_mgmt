@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { BannerReviewStatus, BannerStatus ,BannerOwner} from "../utils/constant";
+import { BannerReviewStatus, BannerStatus ,BannerOwner, BANNER_APPROVAL_ACTIONS} from "../utils/constant";
 
  export const updateBannerCategoryValidate = {
   body: Joi.object({
@@ -112,7 +112,7 @@ export const approveBannerValidation = {
       "number.base": "bannerId must be a number."
     }),
     action: Joi.string()
-      .valid("approve", "reject")
+      .valid(BANNER_APPROVAL_ACTIONS.APPROVE, BANNER_APPROVAL_ACTIONS.REJECT)
       .required()
       .messages({
         "any.required": "action is required.",

@@ -8,7 +8,8 @@ import {
   BannerReviewStatus,
   BannerStatus,
   TargetAudience,FILE_PROVIDER,
-  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION
+  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION,
+  BANNER_APPROVAL_ACTIONS
 } from "../utils/constant";
 import { createBannerValidateSchema } from "./validators";
 import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
@@ -449,7 +450,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    bannerApprovalHandler: async (request: FastifyRequest<{Body:BannerApprovalBody}>,reply: FastifyReply): Promise<void> => {
+    bannerApprovalHandler: async (request: FastifyRequest<{ Body: BannerApprovalBody }>, reply: FastifyReply): Promise<void> => {
       try {
         const adminId = (request as any).user?.userId;
 
@@ -468,42 +469,23 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           );
         }
 
-        if (action == "approve") {
-          if ( banner.reviewStatus === BannerReviewStatus.APPROVED.value || banner.status === BannerStatus.ACTIVE.value) {
-            throw new APIError(
-              "Bad Request",
-              400,
-              "BANNER_ALREADY_APPROVED",
-              false,
-              "Banner already approved"
-            );
-          }
-          banner.reviewStatus = BannerReviewStatus.APPROVED.value;
-          banner.status = BannerStatus.ACTIVE.value;
-          banner.approvedBy = adminId;
-          banner.isActive = true;
-
-          await bannerRepo.save(banner);
-        } else if (action == "reject") {
-          if (banner.reviewStatus === BannerReviewStatus.REJECTED.value) {
-            throw new APIError(
-              "Bad Request",
-              400,
-              "BANNER_ALREADY_REJECTED",
-              false,
-              "Banner already Rejected"
-            );
-          }
-          banner.reviewStatus = BannerReviewStatus.REJECTED.value;
-          if (banner.status != BannerStatus.DRAFT.value &&banner.status != BannerStatus.EXPIRED.value ) {
-            banner.status = BannerStatus.DRAFT.value;
-          }
-          banner.rejectReason = rejectReason;
-          banner.approvedBy = adminId;
-          await bannerRepo.save(banner);
+        if (banner.reviewStatus !== BannerReviewStatus.PENDING.value || banner.status !== BannerStatus.DRAFT.value) {
+          throw new APIError(
+            "Banner already processed",
+            400,
+            "INVALID_BANNER_STATUS",
+            false,
+            "You can not approve/reject this banner anymore"
+          );
         }
+        banner.reviewStatus = action === BANNER_APPROVAL_ACTIONS.APPROVE ? BannerReviewStatus.APPROVED.value : BannerReviewStatus.REJECTED.value;
+        banner.status = action === BANNER_APPROVAL_ACTIONS.APPROVE ? BannerStatus.ACTIVE.value : BannerStatus.DRAFT.value;
+        banner.approvedBy = adminId;
+        banner.rejectReason = action === BANNER_APPROVAL_ACTIONS.REJECT ? rejectReason : null;
+        await bannerRepo.save(banner);
 
-        const response =action == "approve" ? { ApprovedBannerId: bannerId } : { RejectedBannerId: bannerId };
+
+        const response = action === BANNER_APPROVAL_ACTIONS.APPROVE ? { approved: true } : { rejected: true };
 
         reply
           .status(200)
