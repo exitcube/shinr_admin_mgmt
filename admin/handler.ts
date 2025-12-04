@@ -101,7 +101,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const day = String(joiningDateObj.getDate()).padStart(2, "0");
         const month = String(joiningDateObj.getMonth() + 1).padStart(2, "0");
-        const empCode = `SHINR${nextval}${day}${month}`;
+        const empCode = `SHINR${Number(nextval)+1}${day}${month}`;
 
         const defaultPassword = "Admin@123";
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
