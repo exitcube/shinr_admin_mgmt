@@ -468,7 +468,15 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             "Invalid banner id"
           );
         }
-
+        if (adminId === banner.createdBy) {
+          throw new APIError(
+            "Banner reveiwing failed",
+            400,
+            "UNAUTHORIZED_ACTION",
+            false,
+            "You cannot approve or reject a banner you created."
+          );
+        }
         if (banner.reviewStatus !== BannerReviewStatus.PENDING.value || banner.status !== BannerStatus.DRAFT.value) {
           throw new APIError(
             "Banner already processed",
