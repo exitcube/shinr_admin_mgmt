@@ -318,18 +318,18 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const { width, height } = await getDimension(bannerImg);
 
-        // if (
-        //   width !== BANNER_IMAGE_DIMENSION.WIDTH ||
-        //   height !== BANNER_IMAGE_DIMENSION.HEIGHT
-        // ) {
-        //   throw new APIError(
-        //     "Bad Request",
-        //     400,
-        //     "IMAGE_DIMENSION_INVALID",
-        //     false,
-        //     "Image must be exactly 272 × 230 pixels."
-        //   );
-        // }
+        if (
+          width !== BANNER_IMAGE_DIMENSION.WIDTH ||
+          height !== BANNER_IMAGE_DIMENSION.HEIGHT
+        ) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "IMAGE_DIMENSION_INVALID",
+            false,
+            "Image must be exactly 272 × 230 pixels."
+          );
+        }
 
         if (Object.keys(bannerImg).length === 0) {
           throw new APIError(
