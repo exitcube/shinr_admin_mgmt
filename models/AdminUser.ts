@@ -36,6 +36,9 @@ export class AdminUser{
 
     @Column({ default: false })
     isActive: boolean;
+
+    @Column({ type: 'date', nullable: false })
+    joiningDate: Date;
   
     @CreateDateColumn()
     createdAt: Date;

@@ -52,6 +52,7 @@ export async function addAdminUsers(
       const password = (rawRow.Password ?? rawRow.password ?? "").toString();
       const email =  (rawRow.Email ?? rawRow.email ?? "").toString().trim();
       const empCode =  (rawRow.EmpCode ?? rawRow.empCode ?? "").toString().trim();
+      const joiningDate = (rawRow.JoiningDate ?? rawRow.joiningDate ?? "").toString().trim();
 
       if (!ALLOWED_ROLES.includes(adminRole)) {
         result.skipped.push({
@@ -70,6 +71,16 @@ export async function addAdminUsers(
           role:adminRole,
         });
         continue;
+        
+      }
+      if (!joiningDate) {
+        result.skipped.push({
+          row: rowIndex,
+          reason: "Missing joining Date",
+          userName,
+          role:adminRole,
+        });
+        continue; 
       }
       if (!empCode) {
         result.skipped.push({
@@ -91,7 +102,6 @@ export async function addAdminUsers(
         });
         continue;
       }
-
       const hashed = await bcrypt.hash(password, hashing);
 
       const newUser = adminRepo.create({
@@ -99,7 +109,8 @@ export async function addAdminUsers(
         role:adminRole,
         password: hashed,
         email:email,
-        empCode:empCode
+        empCode:empCode,
+        joiningDate:joiningDate
       });
 
       await adminRepo.save(newUser);
@@ -109,7 +120,8 @@ export async function addAdminUsers(
         userName: newUser.userName,
         role: newUser.role,
         email:newUser.email,
-        empCode:newUser.empCode
+        empCode:newUser.empCode,
+        joiningDate:newUser.joiningDate
       });
     } catch (err: any) {
       result.errors.push({ row: rowIndex, error: err.message ?? String(err) });

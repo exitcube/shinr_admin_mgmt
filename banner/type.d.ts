@@ -14,3 +14,9 @@ export type ListBannerQuery = {
     limit?: number;
     sortOrder?: 'ASC' | 'DESC';
 }
+
+export type BannerApprovalBody={
+    bannerId:string;
+    action:'approve' | 'reject';
+    rejectReason?:string;
+}

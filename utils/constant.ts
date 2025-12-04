@@ -20,6 +20,7 @@ export enum BannerTargetAudience{
 export const BannerStatus={
     ACTIVE:{ displayValue: 'Active', value: 'ACTIVE' },
     DRAFT:{ displayValue: 'Draft', value: 'DRAFT' },
+    EXPIRED:{ displayValue: 'Expired', value: 'EXPIRED' }
 }
 
 export  const BannerReviewStatus={

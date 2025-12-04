@@ -1,5 +1,5 @@
 export type Result = {
-  created: Array<{ row: number; userName: string; role: string , email:string , empCode:string }>;
+  created: Array<{ row: number; userName: string; role: string , email:string , empCode:string, joiningDate:Date }>;
   skipped: Array<{
     row: number;
     userName?: string;
