@@ -45,6 +45,14 @@ export const listBannerValidate = {
       .integer()
       .optional()
       .description('Filter by vendor ID'),
+      
+    startTime: Joi.date()
+      .optional()
+      .description('Filter banners starting from this time'),
+
+    endTime: Joi.date()
+      .optional()
+      .description('Filter banners ending by this time'),
 
     sortOrder: Joi.string()
       .uppercase()

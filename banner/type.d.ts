@@ -10,6 +10,8 @@ export type ListBannerQuery = {
     reviewStatus?: string;
     categoryId?: number;
     vendorId?: number;
+    startTime?: Date;
+    endTime?: Date;
     page?: number;
     limit?: number;
     sortOrder?: 'ASC' | 'DESC';
