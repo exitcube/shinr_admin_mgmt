@@ -249,7 +249,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       reply: FastifyReply
     ): Promise<void> => {
       try {
-        const { search, status, reviewStatus, categoryId, vendorId, page = 1, limit = 10, sortOrder = 'ASC' } = request.query as ListBannerQuery
+        const { search, status, reviewStatus, categoryId, vendorId, startTime, endTime, page = 1, limit = 10, sortOrder = 'ASC' } = request.query as ListBannerQuery
         const bannerRepo = fastify.db.getRepository(Banner);
 
         const where: any = { isActive: true };
@@ -258,6 +258,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         if (reviewStatus) where.reviewStatus = reviewStatus;
         if (categoryId) where.categoryId = categoryId;
         if (vendorId) where.vendorId = vendorId;
+        if (startTime) where.startTime = startTime;
+        if (endTime) where.endTime = endTime;
 
         let finalWhere: any = where;
 
@@ -301,7 +303,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).statusCode || 500,
           (error as APIError).code || 'BANNER_LISTING_FAILED',
           true,
-           'Failed to fetch banners'
+          'Failed to fetch banners'
         );
       }
     },
