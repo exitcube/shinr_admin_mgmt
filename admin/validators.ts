@@ -17,3 +17,11 @@ export const adminLoginValidate = {
       }),
   }),
 };
+
+export const createAdminUserValidate = {
+  body: Joi.object({
+    userName: Joi.string().min(3).required(),
+    newRole: Joi.string().required(),
+    email: Joi.string().email().optional(),
+  })
+};
