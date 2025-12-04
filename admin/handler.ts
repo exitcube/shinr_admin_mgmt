@@ -89,22 +89,19 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     createAdminUserHandler: async (request: FastifyRequest<{ Body: createAdminUserBody }>, reply: FastifyReply) => {
       try {
-        const { role } = (request as any).user;
-        if (role !== "SUPER_ADMIN") {
-          throw new APIError(
-            "Unauthorized",
-            403,
-            "UNAUTHORIZED",
-            false,
-            "You do not have permission to create admin users."
-          );
-        }
-        const { userName, newRole, email } = request.body;
+        const { userName, newRole, email, joiningDate } = request.body;
 
         const adminRepo = fastify.db.getRepository(AdminUser);
 
-        const tempEmpCode = "TEMP";
-        const joinDate = new Date();
+        const [{ nextval }] = await adminRepo.query(`
+        SELECT nextval(pg_get_serial_sequence('"adminUser"', 'id'))
+        `);
+
+        const joiningDateObj = new Date(joiningDate);
+
+        const day = String(joiningDateObj.getDate()).padStart(2, "0");
+        const month = String(joiningDateObj.getMonth() + 1).padStart(2, "0");
+        const empCode = `SHINR${nextval}${day}${month}`;
 
         const defaultPassword = "Admin@123";
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
@@ -114,20 +111,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           password: hashedPassword,
           role: newRole,
           email: email,
-          empCode: tempEmpCode,
-          joiningDate: joinDate,
+          empCode: empCode,
+          joiningDate: joiningDate,
           isActive: true,
         });
-        await adminRepo.save(NewAdminUser);
-
-        const pk = NewAdminUser.id;
-        const joiningDate = NewAdminUser.joiningDate;
-        const day = String(joiningDate.getDate()).padStart(2, "0");
-        const month = String(joiningDate.getMonth() + 1).padStart(2, "0");
-
-        const empCode = `SHINR${pk}${day}${month}`;
-
-        NewAdminUser.empCode = empCode;
         await adminRepo.save(NewAdminUser);
 
         const result = createSuccessResponse({ data: NewAdminUser.empCode, Message: "Admin user created successfully" });

@@ -10,5 +10,6 @@ export type adminLoginBody={
 export type createAdminUserBody={
     userName:string;
     newRole:string;
-    email?:string;
+    email:string;
+    joiningDate: Date;
 }

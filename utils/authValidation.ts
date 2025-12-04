@@ -273,3 +273,46 @@ export async function deviceIdValidationPreHandler(
         return reply.status(500).send(errorResponse);
     }
 }
+
+/**
+ * PreHandler to validate role for admin
+ */
+
+export async function superAdminRolePreHandler(
+    request: FastifyRequest,
+    reply: FastifyReply
+): Promise<void> {
+    try {
+        const user = (request as any).user;
+
+        if (user?.role !== "SUPER_ADMIN") {
+            const errorResponse = createErrorResponse(
+                {
+                    message: "You are not allowed to create admin users",
+                    code: "FORBIDDEN",
+                    statusCode: 403,
+                    timestamp: new Date().toISOString(),
+                    path: request.url,
+                    method: request.method,
+                },
+                "Only SUPER_ADMIN can access this resource"
+            );
+
+            return reply.status(403).send(errorResponse);
+        }
+    } catch (err) {
+        const errorResponse = createErrorResponse(
+            {
+                message: "Role validation failed",
+                code: "ROLE_VALIDATION_ERROR",
+                statusCode: 500,
+                timestamp: new Date().toISOString(),
+                path: request.url,
+                method: request.method,
+            },
+            "Error during role validation"
+        );
+
+        return reply.status(500).send(errorResponse);
+    }
+}
