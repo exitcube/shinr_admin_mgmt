@@ -258,8 +258,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         if (reviewStatus) where.reviewStatus = reviewStatus;
         if (categoryId) where.categoryId = categoryId;
         if (vendorId) where.vendorId = vendorId;
-        if (startTime) where.startTime = startTime;
-        if (endTime) where.endTime = endTime;
+        if (startTime) where.startTime = new Date(startTime);
+        if (endTime) where.endTime = new Date(endTime);
 
         let finalWhere: any = where;
 
