@@ -1,4 +1,8 @@
-export const ALLOWED_ROLES:string[] = ["ADMIN", "SUPER_ADMIN", "EMPLOYEE"];
+export const ADMIN_ALLOWED_ROLES = [
+  { admin: { displayValue: "Admin", value: "ADMIN" } },
+  { superadmin: { displayValue: "Super Admin", value: "SUPER_ADMIN" } },
+  { employee: { displayValue: "Employee", value: "EMPLOYEE" } },
+];
 
 export enum RefreshTokenStatus {
     ACTIVE = 'ACTIVE',
