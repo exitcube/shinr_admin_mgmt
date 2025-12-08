@@ -14,6 +14,7 @@ import {
 import { createBannerValidateSchema,updateBannerValidateSchema } from "./validators";
 import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
 import sharp from "sharp";
+import { EntityManager } from "typeorm";
 
  
 
@@ -551,7 +552,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           );
         }
 
-        if(banner.status===BannerStatus.EXPIRED.value||banner.reviewStatus===BannerReviewStatus.REJECTED.value){
+        if(banner.status===BannerStatus.EXPIRED.value){
           throw new APIError(
             "Banneder Editing failed",
             400,
@@ -590,11 +591,21 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             "Image must be less than 5MB"
           );
         }
-        const adminFile= await adminFileRepo.findOne({where:{id:banner.bgImageId,isActive:true}});
-        if(adminFile){
-         await adminFileRepo.update({id:banner.bgImageId},{isActive:false});
-        await fileRepo.update({id:adminFile.fileId},{isActive:false});
-        }
+       await fastify.db.query(
+         `
+  WITH updated_admin AS (
+    UPDATE "adminFile"
+    SET "isActive" = false
+    WHERE id = $1
+    AND "isActive" = true
+    RETURNING "fileId"
+  )
+  UPDATE file
+  SET "isActive"= false
+  WHERE id = (SELECT "fileId" FROM updated_admin);
+  `,
+         [banner.bgImageId]
+       );
 
         const filePath = await fileUpload(bannerImg, adminId);
 
@@ -619,15 +630,29 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         banner.bgImageId=newAdminFile.id;
       }
-      banner.title=title??banner.title;
-      banner.categoryId=categoryId??banner.categoryId;
-      banner.owner=owner??banner.owner;
-      banner.vendorId=vendorId??banner.vendorId;
-      banner.targetValue=targetValue??banner.targetValue;
-      banner.displaySequence=priority??banner.displaySequence;
-      banner.startTime=startTime??banner.startTime;
-      banner.endTime=endTime??banner.endTime;
-      banner.homePageView=homePageView??banner.homePageView;
+      if(title)banner.title=title;
+      if(categoryId)banner.categoryId=categoryId;
+      if(owner)banner.owner=owner;
+      if(vendorId)
+        {
+          const vendorRepo=fastify.db.getRepository(Vendor);
+          const vendor= await vendorRepo.findOne({where:{id:vendorId,isActive:true}});
+          if(!vendor){
+             throw new APIError(
+            "vendor updating failed",
+            400,
+            "VENDOR_ID_INVALID",
+            false,
+            "Vendor Doesnt Exist"
+          );
+        }
+        banner.vendorId=vendorId;
+      }
+      if(targetValue)banner.targetValue=targetValue;
+      if(priority)banner.displaySequence=priority;
+      if(startTime)banner.startTime=startTime;
+      if(endTime) banner.endTime=endTime;
+      if(homePageView)banner.homePageView=homePageView;
       banner.reviewStatus=BannerReviewStatus.PENDING.value;
       banner.status=BannerStatus.DRAFT.value;
 

@@ -11,7 +11,7 @@ import {
   import { AdminUser } from "./AdminUser";
   import { File } from "./File";
   
-  @Entity({ name: "adminfile" })
+  @Entity("adminFile")
   export class AdminFile {
     @PrimaryGeneratedColumn()
     id: number;
