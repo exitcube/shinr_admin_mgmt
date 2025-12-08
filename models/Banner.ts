@@ -45,10 +45,10 @@ export class Banner {
   @Column({ nullable: true })
   targetValue: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'date', nullable: true })
   startTime: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'date', nullable: true })
   endTime: Date;
 
   @Column({ nullable: true })
@@ -81,10 +81,10 @@ export class Banner {
   @JoinColumn({ name: "approvedBy" })
   approvedByAdminUser: AdminUser;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updatedAt: Date;
 
   @Column({ default: false })

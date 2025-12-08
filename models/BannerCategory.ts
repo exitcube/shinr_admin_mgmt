@@ -29,10 +29,10 @@ export class BannerCategory {
   @JoinColumn({ name: "createdBy" })
   adminUser: AdminUser;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updatedAt: Date;
 
   @Column({ default: false })
