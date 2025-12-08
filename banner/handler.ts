@@ -742,15 +742,23 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             const targetAudience = await bannerUserTargetConfigRepo.findOne({
               where: { id: id, isActive: true },
             });
-            const isFile = targetAudience ? targetAudience.isFile : false;
-            if (!isFile) {
+            if(!targetAudience)
+            {
+               throw new APIError(
+            "Target audience not found",
+            400,
+            "TARGET_AUDIENCE_INVALID",
+            false,
+            "the given targetAudience is  is not found"
+          );
+            }
               const newBannerAudeince = bannerAudienceTypeRepo.create({
                 bannerId: banner.id,
                 bannerConfigId: id,
                 isActive: true,
               });
               await bannerAudienceTypeRepo.save(newBannerAudeince);
-            }
+            
           }
         }
 
