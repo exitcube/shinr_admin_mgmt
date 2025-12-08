@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import {  UpdateBannerCategoryBody, ListBannerQuery,BannerApprovalBody } from "./type";
-import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType} from "../models/index";
+import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType,BannerUserTarget} from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike } from "typeorm";
@@ -545,6 +545,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const bannerRepo= fastify.db.getRepository(Banner);
         const bannerUserTargetConfigRepo= fastify.db.getRepository(BannerUserTargetConfig);
         const bannerAudienceTypeRepo= fastify.db.getRepository(BannerAudienceType);
+        const bannerUserTargetRepo=fastify.db.getRepository(BannerUserTarget);
 
         const banner= await bannerRepo.findOne({where:{id:bannerId,isActive:true}});
 
@@ -667,6 +668,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
       if (targetAudienceId && Array.isArray(targetAudienceId)) {
         await bannerAudienceTypeRepo.update({bannerId:banner.id},{isActive:false});
+        await bannerUserTargetRepo.update({bannerId:banner.id},{isActive:false});
           for (const id of targetAudienceId) {
             const targetAudience = await bannerUserTargetConfigRepo.findOne({
               where: { id: id, isActive: true },
