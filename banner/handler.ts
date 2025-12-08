@@ -404,6 +404,9 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         });
         await adminFileRepo.save(newAdminFile);
 
+        const endTimeValue=endTime? new Date(endTime) :new Date('2099-01-01');
+        const startTimeValue=startTime?new Date(startTime): new Date();
+
         const newBanner = bannerRepo.create({
           bgImageId: newAdminFile.id,
           title,
@@ -413,8 +416,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           homePageView,
           displaySequence: priority,
           targetValue,
-          startTime,
-          endTime,
+          startTime:startTimeValue,
+          endTime: endTimeValue,
           createdBy: adminId,
           status: BannerStatus.DRAFT.value,
           reviewStatus: BannerReviewStatus.PENDING.value,
