@@ -2,10 +2,11 @@ import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } f
 import { refreshRequestBody, adminLoginBody, createAdminUserBody } from './type';
 import bcrypt from "bcrypt";
 import { generateAdminRefreshToken, signAdminAccessToken, verifyAdminRefreshToken, verifyAdminAccessToken } from '../utils/jwt';
-import { createSuccessResponse } from '../utils/response';
+import { createSuccessResponse,createPaginatedResponse } from '../utils/response';
 import { APIError } from '../types/errors';
-import { RefreshTokenStatus } from '../utils/constant';
+import { RefreshTokenStatus, } from '../utils/constant';
 import { AdminUser, AdminToken } from "../models/index"
+import { ILike } from 'typeorm';
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
@@ -127,6 +128,50 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "CREATE_ADMIN_USER_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to create admin user. Please try again later."
+        );
+      }
+    },
+    adminRoleListingHandler:async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+         const { search, page = 1, limit = 10 } = request.query as any;
+
+        const adminRepo = fastify.db.getRepository(AdminUser);
+
+        const where: any = { isActive: true };
+        if (search) {
+          where.role = ILike(`%${search}%`);
+        }
+
+        const [adminRoles, total] = await adminRepo.findAndCount(
+          {
+            where,
+            order: { id: "ASC" },
+            skip: (page - 1) * limit,
+            take: limit,
+          }
+        );
+
+        const adminRoleList = adminRoles.map(
+          (v: AdminUser) => ({
+            id: v.id,
+            name: v.role,
+          })
+        );
+
+        reply
+          .status(200)
+          .send(
+            createPaginatedResponse(adminRoleList, total, page, limit)
+          );
+
+
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message,
+          (error as APIError).statusCode || 400,
+          (error as APIError).code || "ADMIN_ROLE_LISTING_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to fetch admin roles. Please try again later."
         );
       }
     },
