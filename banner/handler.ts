@@ -11,6 +11,7 @@ import {
   BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION,
   BANNER_APPROVAL_ACTIONS
 } from "../utils/constant";
+import { MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { createBannerValidateSchema } from "./validators";
 import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
 import sharp from "sharp";
@@ -249,7 +250,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       reply: FastifyReply
     ): Promise<void> => {
       try {
-        const { search, status, reviewStatus, categoryId, vendorId, page = 1, limit = 10, sortOrder = 'ASC' } = request.query as ListBannerQuery
+        const { search, status, reviewStatus, categoryId, vendorId,startTime,endTime, page = 1, limit = 10, sortOrder = 'ASC' } = request.query as ListBannerQuery
         const bannerRepo = fastify.db.getRepository(Banner);
 
         const where: any = { isActive: true };
@@ -258,6 +259,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         if (reviewStatus) where.reviewStatus = reviewStatus;
         if (categoryId) where.categoryId = categoryId;
         if (vendorId) where.vendorId = vendorId;
+        if (startTime) where.startTime = MoreThanOrEqual(startTime);
+        if (endTime) where.endTime = LessThanOrEqual(endTime);       
 
         let finalWhere: any = where;
 
