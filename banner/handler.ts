@@ -700,5 +700,34 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
+    deleteBannerHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      try {
+        const id = (request.query as any).id;
+        const bannerRepo = fastify.db.getRepository(Banner);
+        const bannerAudienceTypeRepo = fastify.db.getRepository(BannerAudienceType);
+
+        const existingBanner = await bannerRepo.findOne({
+          where: { id, isActive: true },
+        });
+        if (!existingBanner) {
+          throw new APIError("Invalid banner id", 400, "INVALID_ID", true);
+        }
+        await bannerRepo.update({ id }, { isActive: false });
+        await bannerAudienceTypeRepo.update({ bannerId: id }, { isActive: false });
+        reply
+          .status(200)
+          .send(createSuccessResponse({ deleted: 1 },"Banner Deleted Successfully"));
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to delete Banner",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Banner_Deleting_FAILED",
+          true,
+          (error as APIError).publicMessage ||
+          "Failed to delete Banner"
+        );
+      }
+    },
   };
 }
