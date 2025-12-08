@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import { generateAdminRefreshToken, signAdminAccessToken, verifyAdminRefreshToken, verifyAdminAccessToken } from '../utils/jwt';
 import { createSuccessResponse,createPaginatedResponse } from '../utils/response';
 import { APIError } from '../types/errors';
-import { RefreshTokenStatus, } from '../utils/constant';
+import { RefreshTokenStatus,ADMIN_ALLOWED_ROLES } from '../utils/constant';
 import { AdminUser, AdminToken } from "../models/index"
 import { ILike } from 'typeorm';
 
@@ -133,37 +133,21 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     adminRoleListingHandler:async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-         const { search, page = 1, limit = 10 } = request.query as any;
+         const { page = 1, limit = 10 } = request.query as any;
 
-        const adminRepo = fastify.db.getRepository(AdminUser);
-
-        const where: any = { isActive: true };
-        if (search) {
-          where.role = ILike(`%${search}%`);
-        }
-
-        const [adminRoles, total] = await adminRepo.findAndCount(
-          {
-            where,
-            order: { id: "ASC" },
-            skip: (page - 1) * limit,
-            take: limit,
-          }
-        );
-
-        const adminRoleList = adminRoles.map(
-          (v: AdminUser) => ({
-            id: v.id,
-            name: v.role,
-          })
-        );
+       const adminRoles = ADMIN_ALLOWED_ROLES.map((r) => {
+         const role = Object.values(r)[0];
+         return {
+           displayName: role.displayValue,
+           value: role.value,
+         };
+       });
 
         reply
           .status(200)
           .send(
-            createPaginatedResponse(adminRoleList, total, page, limit)
+            createPaginatedResponse(adminRoles, adminRoles.length, page, limit)
           );
-
 
       } catch (error) {
         throw new APIError(

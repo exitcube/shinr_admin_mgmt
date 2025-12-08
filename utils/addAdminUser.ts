@@ -13,6 +13,7 @@ export async function addAdminUsers(
   hashing = 10
 ): Promise<Result> {
   const result: Result = { created: [], skipped: [], errors: [] };
+  const validRoles = ADMIN_ALLOWED_ROLES.flatMap(r => Object.values(r).map(v => v.value));
 
   const absolutePath = path.isAbsolute(csvFilePath)
     ? csvFilePath
@@ -54,7 +55,7 @@ export async function addAdminUsers(
       const empCode =  (rawRow.EmpCode ?? rawRow.empCode ?? "").toString().trim();
       const joiningDate = (rawRow.JoiningDate ?? rawRow.joiningDate ?? "").toString().trim();
 
-      if (!ADMIN_ALLOWED_ROLES.includes(adminRole)) {
+      if (!validRoles.includes(adminRole)) {
         result.skipped.push({
           row: rowIndex,
           reason: "Missing Role or Invalid Role",
