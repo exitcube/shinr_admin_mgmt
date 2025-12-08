@@ -657,11 +657,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       banner.status=BannerStatus.DRAFT.value;
 
       await bannerRepo.save(banner);
-      
-      if(targetAudienceId) await bannerAudienceTypeRepo.update({bannerId:banner.id},{isActive:false});
-     
+       
 
       if (targetAudienceId && Array.isArray(targetAudienceId)) {
+        await bannerAudienceTypeRepo.update({bannerId:banner.id},{isActive:false});
           for (const id of targetAudienceId) {
             const targetAudience = await bannerUserTargetConfigRepo.findOne({
               where: { id: id, isActive: true },
