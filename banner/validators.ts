@@ -22,43 +22,80 @@ export const listBannerValidate = {
     search: Joi.string()
       .min(3)
       .optional()
-      .description(
-        'Search by banner title, category display text, vendor name, or vendor code (minimum 3 characters)'
-      ),
+      .messages({
+        'string.min': 'Search term must be at least 3 characters long',
+        'string.base': 'Search must be a string',
+      }),
 
     reviewStatus: Joi.string()
       .valid(...Object.values(BannerReviewStatus).map(s => s.value))
       .optional()
-      .description('Filter by banner review status'),
+      .messages({
+        'any.only': 'Review status must be one of the allowed values',
+        'string.base': 'Review status must be a string',
+      }),
 
     status: Joi.string()
       .valid(...Object.values(BannerStatus).map(s => s.value))
       .optional()
-      .description('Filter by banner status'),
+      .messages({
+        'any.only': 'Status must be one of the allowed values',
+        'string.base': 'Status must be a string',
+      }),
 
     categoryId: Joi.number()
       .integer()
       .optional()
-      .description('Filter by banner category ID'),
+      .messages({
+        'number.base': 'Category ID must be a number',
+        'number.integer': 'Category ID must be an integer',
+      }),
 
     vendorId: Joi.number()
       .integer()
       .optional()
-      .description('Filter by vendor ID'),
+      .messages({
+        'number.base': 'Vendor ID must be a number',
+        'number.integer': 'Vendor ID must be an integer',
+      }),
+
+      startTime: Joi.date()
+        .iso()
+        .optional()
+        .messages({
+          'string.pattern.base': 'Start time must be a valid Date Format',
+          'string.base': 'Start time must be a string',
+        }),
+
+      endTime: Joi.date()
+        .iso()
+        .optional()
+        .messages({
+          'string.pattern.base': 'End time must be a valid Date Format',
+          'string.base': 'End time must be a string',
+        }),
+
 
     sortOrder: Joi.string()
       .uppercase()
       .valid('ASC', 'DESC')
       .optional()
       .default('ASC')
-      .description('Sort order by display sequence'),
+      .messages({
+        'any.only': 'Sort order must be either ASC or DESC',
+        'string.base': 'Sort order must be a string',
+      }),
 
     page: Joi.number()
       .integer()
       .min(1)
       .optional()
       .default(1)
-      .description('Page number for pagination'),
+      .messages({
+        'number.base': 'Page must be a number',
+        'number.integer': 'Page must be an integer',
+        'number.min': 'Page must be at least 1',
+      }),
 
     limit: Joi.number()
       .integer()
@@ -66,7 +103,12 @@ export const listBannerValidate = {
       .max(100)
       .optional()
       .default(10)
-      .description('Number of items per page'),
+      .messages({
+        'number.base': 'Limit must be a number',
+        'number.integer': 'Limit must be an integer',
+        'number.min': 'Limit must be at least 1',
+        'number.max': 'Limit cannot exceed 100',
+      }),
   }),
 };
 

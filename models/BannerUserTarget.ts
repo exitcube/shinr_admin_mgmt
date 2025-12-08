@@ -32,10 +32,10 @@ export class BannerUserTarget {
   @JoinColumn({ name: "userId" })
   user: User;
 
-  @CreateDateColumn()
+  @CreateDateColumn({type: 'timestamptz'})
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({type: 'timestamptz'})
   updatedAt: Date;
 
   @Column({ default: false })
