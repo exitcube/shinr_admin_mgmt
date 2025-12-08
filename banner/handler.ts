@@ -702,9 +702,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     deleteBannerHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
-        const id = (request.query as any).id;
+        const id = (request.params as any).id;
         const bannerRepo = fastify.db.getRepository(Banner);
-        const bannerAudienceTypeRepo = fastify.db.getRepository(BannerAudienceType);
 
         const existingBanner = await bannerRepo.findOne({
           where: { id, isActive: true },
@@ -712,11 +711,31 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         if (!existingBanner) {
           throw new APIError("Invalid banner id", 400, "INVALID_ID", true);
         }
-        await bannerRepo.update({ id }, { isActive: false });
-        await bannerAudienceTypeRepo.update({ bannerId: id }, { isActive: false });
+
+        await fastify.db.query(
+          `
+          WITH updated_banner AS (
+            UPDATE banner
+            SET "isActive" = false
+            WHERE id = $1
+            AND "isActive" = true
+            RETURNING id
+          ),
+          updated_audience AS (
+            UPDATE "bannerAudienceType"
+            SET "isActive" = false
+            WHERE "bannerId" = (SELECT id FROM updated_banner)
+            RETURNING "bannerId"
+          )
+          UPDATE "bannerUserTarget"
+          SET "isActive" = false
+          WHERE "bannerId" = (SELECT id FROM updated_banner);
+          `,
+          [id]
+        );
         reply
           .status(200)
-          .send(createSuccessResponse({ deleted: 1 },"Banner Deleted Successfully"));
+          .send(createSuccessResponse({ deleted: 1 }, "Banner Deleted Successfully"));
       }
       catch (error) {
         throw new APIError(
