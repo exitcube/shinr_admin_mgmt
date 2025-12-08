@@ -462,15 +462,23 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             const targetAudience = await bannerUserTargetConfigRepo.findOne({
               where: { id: id, isActive: true },
             });
-            const isFile = targetAudience ? targetAudience.isFile : false;
-            if (!isFile) {
+            if(!targetAudience)
+            {
+               throw new APIError(
+            "Target audience not found",
+            400,
+            "TARGET_AUDIENCE_INVALID",
+            false,
+            "the given targetAudience is  is not found"
+          );
+            }
               const newBannerAudeince = bannerAudienceTypeRepo.create({
                 bannerId: newBanner.id,
                 bannerConfigId: id,
                 isActive: true,
               });
               await bannerAudienceTypeRepo.save(newBannerAudeince);
-            }
+            
           }
         }
         reply
@@ -781,7 +789,6 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         });
         const audienceTypeRepo = fastify.db.getRepository(BannerAudienceType);
         const bannerUserTargetConfigRepo = fastify.db.getRepository(BannerUserTargetConfig);
-        const bannerUserTargetRepo = fastify.db.getRepository(BannerUserTarget);
         const audienceTypes = await audienceTypeRepo.find({
           where: { bannerId: bannerId, isActive: true },
         });
@@ -790,9 +797,6 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           const config = await bannerUserTargetConfigRepo.findOne({
             where: { id: audienceType.bannerConfigId, isActive: true },
           });
-          // const userTarget = await bannerUserTargetRepo.findOne({
-          //   where: { bannerId: bannerId, isActive: true },
-          // });
           if (config) {
             targetAudienceDetails.push({
               id: config.id,
