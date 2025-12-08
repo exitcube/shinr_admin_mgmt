@@ -135,7 +135,7 @@ export const createBannerValidateSchema = Joi.object({
   priority: Joi.number().required(),
 
   startTime: Joi.date().required(),
-  endTime: Joi.date().required(),
+  endTime: Joi.date().optional(),
 
   homePageView: Joi.boolean().required(),
 }).messages({
@@ -176,3 +176,38 @@ export const approveBannerValidation = {
     })
   })
 };
+
+export const updateBannerValidateSchema = Joi.object({
+  bannerId: Joi.number().required(),
+  title: Joi.string().optional(),
+  categoryId: Joi.string().optional(),
+
+  owner: Joi.string().valid(BannerOwner.SHINR, BannerOwner.VENDOR).optional(),
+
+  vendorId: Joi.when("owner", {
+    is: BannerOwner.VENDOR,
+    then: Joi.string().required(),
+    otherwise: Joi.forbidden(),
+  }),
+
+  targetAudienceId: Joi.array()
+    .items(Joi.string().optional())
+    .min(1)
+    .required(),
+
+  targetValue: Joi.string().optional(),
+
+  priority: Joi.number().optional(),
+
+  startTime: Joi.date().optional(),
+  endTime: Joi.date().optional(),
+
+  homePageView: Joi.boolean().optional(),
+}).messages({
+   "any.required": "{{#label}} is required.",
+  "any.only": "{{#label}} value is invalid.",
+  "string.base": "{{#label}} must be a string.",
+  "date.base": "{{#label}} must be a valid date.",
+  "boolean.base": "{{#label}} must be a boolean.",
+  "array.base": "targetAudienceId must be an array.",
+});
