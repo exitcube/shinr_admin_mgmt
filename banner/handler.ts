@@ -721,8 +721,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
         if (targetValue) banner.targetValue = targetValue;
         if (priority) banner.displaySequence = priority;
-        if (startTime) banner.startTime = startTime;
-        if (endTime) banner.endTime = endTime;
+        if (startTime) banner.startTime = new Date(startTime);
+        if (endTime) banner.endTime = new Date(endTime);
         if (homePageView) banner.homePageView = homePageView;
         banner.reviewStatus = BannerReviewStatus.PENDING.value;
         banner.status = BannerStatus.DRAFT.value;
