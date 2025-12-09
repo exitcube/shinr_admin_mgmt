@@ -59,20 +59,18 @@ export const listBannerValidate = {
         'number.integer': 'Vendor ID must be an integer',
       }),
 
-      startTime: Joi.date()
-        .iso()
+      startTime: Joi.string()
+        .isoDate()
         .optional()
         .messages({
-          'string.pattern.base': 'Start time must be a valid Date Format',
-          'string.base': 'Start time must be a string',
+          'string.isoDate': 'Start time must be a valid ISO date with timezone',
         }),
 
-      endTime: Joi.date()
-        .iso()
+      endTime: Joi.string()
+        .isoDate()
         .optional()
         .messages({
-          'string.pattern.base': 'End time must be a valid Date Format',
-          'string.base': 'End time must be a string',
+          'string.isoDate': 'End time must be a valid ISO date with timezone',
         }),
 
 
