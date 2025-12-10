@@ -10,5 +10,6 @@ export default async function adminLoginRoutes(fastify: FastifyInstance, opts: F
 	const handler = controller(fastify, opts);
     fastify.post('/login', {preHandler: [validation(adminLoginValidate)]}, handler.adminLoginHandler);
      fastify.post('/createadminuser', {preHandler: [adminAuthValidationPreHandler,superAdminRolePreHandler, validation(createAdminUserValidate)]}, handler.createAdminUserHandler);
+     fastify.get('/list-adminusers', {preHandler: [adminAuthValidationPreHandler]},handler.adminRoleListingHandler);
 
 }

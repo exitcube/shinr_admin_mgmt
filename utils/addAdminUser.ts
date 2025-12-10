@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import bcrypt from "bcrypt";
 import { AdminUser } from "../models/index";
 import { Result } from "../types"
-import { ALLOWED_ROLES } from "./constant";
+import { ADMIN_ALLOWED_ROLES } from "./constant";
 
 export async function addAdminUsers(
   csvFilePath: string,
@@ -13,6 +13,7 @@ export async function addAdminUsers(
   hashing = 10
 ): Promise<Result> {
   const result: Result = { created: [], skipped: [], errors: [] };
+  const validRoles = ADMIN_ALLOWED_ROLES.flatMap(r => Object.values(r).map(v => v.value));
 
   const absolutePath = path.isAbsolute(csvFilePath)
     ? csvFilePath
@@ -54,7 +55,7 @@ export async function addAdminUsers(
       const empCode =  (rawRow.EmpCode ?? rawRow.empCode ?? "").toString().trim();
       const joiningDate = (rawRow.JoiningDate ?? rawRow.joiningDate ?? "").toString().trim();
 
-      if (!ALLOWED_ROLES.includes(adminRole)) {
+      if (!validRoles.includes(adminRole)) {
         result.skipped.push({
           row: rowIndex,
           reason: "Missing Role or Invalid Role",
@@ -110,7 +111,8 @@ export async function addAdminUsers(
         password: hashed,
         email:email,
         empCode:empCode,
-        joiningDate:joiningDate
+        joiningDate:joiningDate,
+        isActive:true
       });
 
       await adminRepo.save(newUser);

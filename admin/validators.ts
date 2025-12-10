@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { ADMIN_ALLOWED_ROLES } from '../utils/constant';
 
 export const adminLoginValidate = {
   body: Joi.object({
@@ -21,7 +22,9 @@ export const adminLoginValidate = {
 export const createAdminUserValidate = {
   body: Joi.object({
     userName: Joi.string().min(3).required(),
-    newRole: Joi.string().required(),
+    newRole: Joi.string()
+    .required()
+    .valid(...ADMIN_ALLOWED_ROLES.map(role => Object.values(role)[0].value)),
     email: Joi.string().email().required(),
     joiningDate: Joi.date().iso().required()
   })
