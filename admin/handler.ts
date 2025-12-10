@@ -88,9 +88,23 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    createAdminUserHandler: async (request: FastifyRequest<{ Body: createAdminUserBody }>, reply: FastifyReply) => {
+   createAdminUserHandler: async (request: FastifyRequest<{ Body: createAdminUserBody }>, reply: FastifyReply) => {
       try {
         const { userName, newRole, email, joiningDate } = request.body;
+        
+        const allowedRoles = ADMIN_ALLOWED_ROLES.map(
+          r => Object.values(r)[0].value
+        );
+
+        if (!allowedRoles.includes(newRole)) {
+          throw new APIError(
+            "Invalid role provided",
+            400,
+            "INVALID_ROLE",
+            true,
+            "Role is not allowed"
+          );
+        }
 
         const adminRepo = fastify.db.getRepository(AdminUser);
 
