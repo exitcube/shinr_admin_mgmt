@@ -16,7 +16,8 @@ import { BannerReviewStatus, BannerStatus ,BannerOwner, BANNER_APPROVAL_ACTIONS}
       }),
   }),
 };
-
+const ISO_WITH_TIMEZONE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?([+-]\d{2}:\d{2}|Z)$/;
 export const listBannerValidate = {
   query: Joi.object({
     search: Joi.string()
@@ -59,19 +60,23 @@ export const listBannerValidate = {
         'number.integer': 'Vendor ID must be an integer',
       }),
 
-      startTime: Joi.string()
-        .isoDate()
-        .optional()
-        .messages({
-          'string.isoDate': 'Start time must be a valid ISO date with timezone',
-        }),
+    startTime: Joi.string()
+      .trim()
+      .pattern(ISO_WITH_TIMEZONE)
+      .optional()
+      .messages({
+        'string.pattern.base':
+          'Start time must be ISO-8601 datetime with timezone',
+      }),
 
-      endTime: Joi.string()
-        .isoDate()
-        .optional()
-        .messages({
-          'string.isoDate': 'End time must be a valid ISO date with timezone',
-        }),
+    endTime: Joi.string()
+      .trim()
+      .pattern(ISO_WITH_TIMEZONE)
+      .optional()
+      .messages({
+        'string.pattern.base':
+          'End time must be ISO-8601 datetime with timezone',
+      }),
 
 
     sortOrder: Joi.string()
