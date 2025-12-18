@@ -45,10 +45,10 @@ export class Banner {
   @Column({ nullable: true })
   targetValue: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   startTime: Date;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   endTime: Date;
 
   @Column({ nullable: true })
