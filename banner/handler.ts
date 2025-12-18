@@ -437,7 +437,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const endTimeValue = endTime
           ? new Date(endTime)
           : new Date("2099-01-01");
-        const startTimeValue = startTime ? new Date(startTime) : new Date();
+        const startTimeValue = new Date(startTime as string) 
 
         const newBanner = bannerRepo.create({
           bgImageId: newAdminFile.id,
@@ -782,7 +782,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     singleBannerHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
       try {
-        const bannerId = (request.query as any).id;
+        const bannerId = (request.params as any).id;
+    
 
         const bannerRepo = fastify.db.getRepository(Banner);
 
