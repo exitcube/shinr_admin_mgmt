@@ -16,6 +16,7 @@ import { createBannerValidateSchema,updateBannerValidateSchema } from "./validat
 import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
 import sharp from "sharp";
 import { EntityManager } from "typeorm";
+import { getUtcRangeFromTwoIsoDates,getDayBoundariesFromIso } from "../utils/helper";
 
  
 
@@ -284,8 +285,17 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         if (reviewStatus) where.reviewStatus = reviewStatus;
         if (categoryId) where.categoryId = categoryId;
         if (vendorId) where.vendorId = vendorId;
-        if (startTime) where.startTime = MoreThanOrEqual(startTime);
-        if (endTime) where.endTime = LessThanOrEqual(endTime);
+        if (startTime && endTime) {
+          const { utcStart, utcEnd } = getUtcRangeFromTwoIsoDates(startTime, endTime);
+          where.startTime = MoreThanOrEqual(utcStart);
+          where.endTime = LessThanOrEqual(utcEnd);
+        } else if (startTime) {
+          const { utcStart } = getDayBoundariesFromIso(startTime);
+          where.startTime = MoreThanOrEqual(utcStart);
+        } else if (endTime) {
+          const { utcEnd } = getDayBoundariesFromIso(endTime);
+          where.endTime = LessThanOrEqual(utcEnd);
+        }
 
         let finalWhere: any = where;
 
@@ -851,6 +861,54 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "SINGLE BANNER_FETCHING_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to fetch banners"
+        );
+      }
+    },
+    deleteBannerHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      try {
+        const id = (request.params as any).id;
+        const bannerRepo = fastify.db.getRepository(Banner);
+
+        const existingBanner = await bannerRepo.findOne({
+          where: { id, isActive: true },
+        });
+        if (!existingBanner) {
+          throw new APIError("Invalid banner id", 400, "INVALID_ID", true);
+        }
+
+        await fastify.db.query(
+          `
+          WITH updated_banner AS (
+            UPDATE banner
+            SET "isActive" = false
+            WHERE id = $1
+            AND "isActive" = true
+            RETURNING id
+          ),
+          updated_audience AS (
+            UPDATE "bannerAudienceType"
+            SET "isActive" = false
+            WHERE "bannerId" = (SELECT id FROM updated_banner)
+            RETURNING "bannerId"
+          )
+          UPDATE "bannerUserTarget"
+          SET "isActive" = false
+          WHERE "bannerId" = (SELECT id FROM updated_banner);
+          `,
+          [id]
+        );
+        reply
+          .status(200)
+          .send(createSuccessResponse({ deleted: 1 }, "Banner Deleted Successfully"));
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to delete Banner",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Banner_Deleting_FAILED",
+          true,
+          (error as APIError).publicMessage ||
+          "Failed to delete Banner"
         );
       }
     },
