@@ -92,6 +92,20 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       try {
         const { userName, newRole, email, joiningDate } = request.body;
 
+        const allowedRoles = ADMIN_ALLOWED_ROLES.map(
+          r => Object.values(r)[0].value
+        );
+
+        if (!allowedRoles.includes(newRole)) {
+          throw new APIError(
+            "Invalid role provided",
+            400,
+            "INVALID_ROLE",
+            true,
+            "Role is not allowed"
+          );
+        }
+
         const adminRepo = fastify.db.getRepository(AdminUser);
 
         const [{ nextval }] = await adminRepo.query(`
@@ -102,7 +116,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const day = String(joiningDateObj.getDate()).padStart(2, "0");
         const month = String(joiningDateObj.getMonth() + 1).padStart(2, "0");
-        const empCode = `SHINR${Number(nextval)+1}${day}${month}`;
+        const empCode = `SHINR${Number(nextval) + 1}${day}${month}`;
 
         const defaultPassword = "Admin@123";
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
