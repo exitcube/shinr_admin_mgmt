@@ -14,9 +14,11 @@ export async function buildApp() {
 
   // Register plugins
   // registering cors -- REMOVE ON PRODUCTION
-  await fastify.register(cors,{
-    origin: "*",
-  });
+   await fastify.register(cors, {
+  origin: true, // reflects request origin
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+});
   await fastify.register(mult)
   await fastify.register(typeormPlugin);
   await fastify.register(errorHandlerPlugin);
