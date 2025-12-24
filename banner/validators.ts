@@ -135,7 +135,7 @@ export const createBannerValidateSchema = Joi.object({
   priority: Joi.number().required(),
 
  startTime: Joi.date().iso().required(),
-endTime: Joi.date().iso().optional(),
+ endTime: Joi.date().iso().greater(Joi.ref("startTime")).optional(),
 
   homePageView: Joi.boolean().required(),
 }).messages({
@@ -200,7 +200,7 @@ export const updateBannerValidateSchema = Joi.object({
   priority: Joi.number().optional(),
 
   startTime: Joi.date().iso().optional(),
-  endTime: Joi.date().iso().optional(),
+ endTime: Joi.date().iso().greater(Joi.ref("startTime")).optional(),
 
   homePageView: Joi.boolean().optional(),
 }).messages({
