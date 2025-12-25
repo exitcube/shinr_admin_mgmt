@@ -65,7 +65,7 @@ export class Reward {
   @Column({ type: 'timestamptz', nullable: true })
   endDate: Date;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true})
   grabLimit: number;
 
   @Column({ nullable: false })
