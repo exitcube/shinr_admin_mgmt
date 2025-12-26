@@ -6,7 +6,6 @@ import { updateBannerCategoryValidate, listBannerValidate,approveBannerValidatio
 
 export default async function bannerRoutes(fastify: FastifyInstance, opts: FastifyPluginOptions) {
     const handler = controller(fastify, opts);
-    fastify.get('/get-vendors',{ preHandler: [adminAuthValidationPreHandler] },handler.vendorListinghandler);
     fastify.get('/get-categories',{ preHandler: [adminAuthValidationPreHandler] },handler.categoryListinghandler);
     fastify.get('/get-status',{ preHandler: [adminAuthValidationPreHandler] },handler.statusListinghandler);
     fastify.put('/update-banner-category',{ preHandler: [adminAuthValidationPreHandler,validation(updateBannerCategoryValidate)]},handler.updateBannerCategoryHandler);
