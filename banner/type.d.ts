@@ -8,6 +8,7 @@ export type ListBannerQuery = {
     search?: string;
     status?: string;
     reviewStatus?: string;
+    owner?: string;
     categoryId?: number;
     vendorId?: number;
     startTime?: string;

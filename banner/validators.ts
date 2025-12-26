@@ -43,6 +43,14 @@ export const listBannerValidate = {
         'string.base': 'Status must be a string',
       }),
 
+    owner: Joi.string()
+      .valid(...Object.values(BannerOwner))
+      .optional()
+      .messages({
+        'any.only': 'Owner must be either SHINR or VENDOR',
+        'string.base': 'Owner must be a string',
+      }),
+
     categoryId: Joi.number()
       .integer()
       .optional()
@@ -51,13 +59,19 @@ export const listBannerValidate = {
         'number.integer': 'Category ID must be an integer',
       }),
 
-    vendorId: Joi.number()
-      .integer()
-      .optional()
-      .messages({
-        'number.base': 'Vendor ID must be a number',
-        'number.integer': 'Vendor ID must be an integer',
+    vendorId: Joi.when('owner', {
+      is: BannerOwner.VENDOR,
+      then: Joi.number()
+        .integer()
+        .optional()
+        .messages({
+          'number.base': 'Vendor ID must be a number',
+          'number.integer': 'Vendor ID must be an integer',
+        }),
+      otherwise: Joi.forbidden().messages({
+        'any.unknown': 'Vendor ID is only allowed when owner is VENDOR',
       }),
+    }),
 
     startTime: Joi.date()
       .iso()
