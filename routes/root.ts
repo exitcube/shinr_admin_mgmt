@@ -4,6 +4,7 @@ import serviceRoutes from '../service/routes';
 import bannerRoutes from '../banner/routes';
 import adminLoginRoutes from '../admin/routes';
 import rewardsRoutes from '../rewards/routes';
+import vendorRoutes from '../vendor/routes';
 
 export default async function routes(
   fastify: FastifyInstance,
@@ -20,5 +21,6 @@ export default async function routes(
   fastify.register(bannerRoutes, { prefix : '/banner'});
   fastify.register(adminLoginRoutes, { prefix: '/admin' });
   fastify.register(rewardsRoutes, { prefix : '/rewards'});
+  fastify.register(vendorRoutes, { prefix : '/vendor'});
 
 }
