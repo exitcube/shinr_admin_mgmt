@@ -9,7 +9,8 @@ import {
   BannerStatus,
   TargetAudience,FILE_PROVIDER,
   BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION,
-  BANNER_APPROVAL_ACTIONS
+  BANNER_APPROVAL_ACTIONS,
+  BannerOwner
 } from "../utils/constant";
 import { MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { createBannerValidateSchema,updateBannerValidateSchema } from "./validators";
@@ -275,6 +276,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           reviewStatus,
           categoryId,
           vendorId,
+          owner,
           startTime,
           endTime,
           page = 1,
@@ -288,7 +290,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         if (status) where.status = status;
         if (reviewStatus) where.reviewStatus = reviewStatus;
         if (categoryId) where.categoryId = categoryId;
-        if (vendorId) where.vendorId = vendorId;
+        if (owner) where.owner = owner;
+        if (owner === BannerOwner.VENDOR && vendorId) {
+          where.vendorId = vendorId;
+        }
         if (startTime && endTime) {
           const { utcStart, utcEnd } = getUtcRangeFromTwoIsoDates(startTime, endTime);
           where.startTime = MoreThanOrEqual(utcStart);
@@ -328,6 +333,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           category: banner.bannerCategory?.displayText,
           reviewStatus: banner.reviewStatus,
           status: banner.status,
+          owner: banner.owner,
           displaySequence: banner.displaySequence,
           startTime: banner.startTime,
           endTime: banner.endTime,
@@ -870,6 +876,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     deleteBannerHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
+        const adminId = (request as any).user?.userId;
         const id = (request.params as any).id;
         const bannerRepo = fastify.db.getRepository(Banner);
 
@@ -882,24 +889,26 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         await fastify.db.query(
           `
-          WITH updated_banner AS (
-            UPDATE banner
-            SET "isActive" = false
-            WHERE id = $1
-            AND "isActive" = true
-            RETURNING id
-          ),
-          updated_audience AS (
-            UPDATE "bannerAudienceType"
-            SET "isActive" = false
-            WHERE "bannerId" = (SELECT id FROM updated_banner)
-            RETURNING "bannerId"
-          )
-          UPDATE "bannerUserTarget"
+        WITH updated_banner AS (
+          UPDATE banner
+          SET
+            "isActive" = false,
+            "removedBy" = $2
+          WHERE id = $1
+          AND "isActive" = true
+          RETURNING id
+        ),
+        updated_audience AS (
+          UPDATE "bannerAudienceType"
           SET "isActive" = false
-          WHERE "bannerId" = (SELECT id FROM updated_banner);
-          `,
-          [id]
+          WHERE "bannerId" = (SELECT id FROM updated_banner)
+          RETURNING "bannerId"
+        )
+        UPDATE "bannerUserTarget"
+        SET "isActive" = false
+        WHERE "bannerId" = (SELECT id FROM updated_banner);
+        `,
+          [id, adminId]
         );
         reply
           .status(200)
