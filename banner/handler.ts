@@ -31,9 +31,12 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const vendorRepo = fastify.db.getRepository(Vendor);
 
-        const where: any = {};
+        let where: any = {};
         if (search) {
-          where.name = ILike(`%${search}%`);
+          where = [
+            { name: ILike(`%${search}%`) },
+            { vendorCode: ILike(`%${search}%`) },
+          ];
         }
 
         const [vendors, total] = await vendorRepo.findAndCount({
@@ -46,6 +49,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const vendorList = vendors.map((v: Vendor) => ({
           id: v.id,
           name: v.name,
+          vendorCode: v.vendorCode,
         }));
 
         reply
