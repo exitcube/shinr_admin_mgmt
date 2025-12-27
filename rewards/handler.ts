@@ -16,7 +16,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           totalGrabLimit, contribution, shinrPercentage, vendorPercentage, maxUsage, maxUsagePeriod,
           maxUsagePeriodValue, status } = request.body as CreateRewardBody;
 
-        const adminId = 1;//(request as any).user?.userId;
+        const adminId = (request as any).user?.userId;
         const rewardRepo = fastify.db.getRepository(Reward);
         const serviceRepo = fastify.db.getRepository(Service);
         const rewardServiceTypeRepo = fastify.db.getRepository(RewardServiceType);
