@@ -10,7 +10,7 @@ import { Service } from "../models/index";
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
-    categoryListinghandler: async (
+    categoryListingHandler: async (
           request: FastifyRequest,
           reply: FastifyReply
         ): Promise<void> => {
@@ -55,7 +55,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             );
           }
         },
-         serviceCategoryListinghandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+         serviceCategoryListingHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
           try {
             const { search, page = 1, limit = 10 } = request.query as any;
     
