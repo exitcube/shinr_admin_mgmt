@@ -69,3 +69,33 @@ export const BANNER_APPROVAL_ACTIONS = {
     REJECT: 'reject'
 };
 
+export enum RewardOwner{
+    SHINR='SHINR',
+    VENDOR='VENDOR'
+}
+
+export enum RewardStatus
+{
+   DRAFT="DRAFT",
+   APPROVED="APPROVED"
+}
+
+export enum RewardOfferType{
+    PERCENTAGE="PERCENTAGE",
+    AMOUNT="AMOUNT",
+    CASHBACK="CASHBACK"
+}
+
+export enum RewardContributor{
+    PLATFORM="PLATFORM",
+    VENDOR="VENDOR",
+    SHARE='SHARE'
+}
+
+export enum RewardMaxUsagePeriod{
+    HOUR="HOUR",
+    DAY="DAY",
+    MONTH="MONTH",
+    OVERALL="OVERALL"
+}
+
