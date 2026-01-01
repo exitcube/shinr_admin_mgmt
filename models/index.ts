@@ -16,6 +16,7 @@ import { BannerCategory } from './BannerCategory';
 import { BannerUserTarget } from './BannerUserTarget';
 import { BannerAudienceType } from './BannerAudienceType';
 import { BannerUserTargetConfig } from './BannerUserTargetConfig';
+import { RewardUserTargetConfig} from './RewardUserTargetConfig';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -38,6 +39,7 @@ export const entities = [
     BannerUserTarget,
     BannerAudienceType,
     BannerUserTargetConfig,
+    RewardUserTargetConfig
     // Product,
 ];
 
@@ -60,5 +62,6 @@ export { BannerCategory, type BannerCategory as BannerCategoryType } from './Ban
 export { BannerUserTarget, type BannerUserTarget as BannerUserTargetType } from './BannerUserTarget';   
 export { BannerAudienceType, type BannerAudienceType as BannerAudienceTypeType } from './BannerAudienceType';
 export { BannerUserTargetConfig, type BannerUserTargetConfig as BannerUserTargetConfigType } from './BannerUserTargetConfig';
+export { RewardUserTargetConfig, type RewardUserTargetConfig as RewardUserTargetConfigType } from './RewardUserTargetConfig';
 
 

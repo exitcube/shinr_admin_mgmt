@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import { APIError } from "../types/errors";
-import { RewardUserTargetConfig } from "../models/RewardUserTargetConfig";
+import { RewardUserTargetConfig } from "../models";
 import { createSuccessResponse } from "../utils/response";
 import { TargetAudience } from "../utils/constant";
 
