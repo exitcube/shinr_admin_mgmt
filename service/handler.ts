@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions } from 'fastify';
-import { Service } from '../models/index';
+import { Service } from '../models';
 import { addServicesBody,updateServicesBody } from './type';
 import { createPaginatedResponse ,createSuccessResponse} from '../utils/response';
 import { NotFoundError, APIError } from '../types/errors';
