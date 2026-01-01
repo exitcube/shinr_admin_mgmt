@@ -19,12 +19,12 @@ import { BannerUserTargetConfig } from './BannerUserTargetConfig';
 import { RewardCategory } from './RewardCategory';
 import { Reward } from './Reward';
 import { RewardUserTarget } from './RewardUserTarget';
-import { RewardUserTargetConfig } from './RewardUserTargetConfig';
 import { RewardUsage } from './RewardUsage';
 import { RewardOfferType } from './RewardOfferType';
 import { RewardContribution } from './RewardContribution';
 import { RewardAudienceType } from './RewardAudienceType';
 import { RewardServiceType } from './RewardServiceType';
+import { RewardUserTargetConfig} from './RewardUserTargetConfig';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -55,7 +55,7 @@ export const entities = [
     RewardContribution,
     RewardAudienceType,
     RewardServiceType,
-    RewardUsage,
+    RewardUsage
     // Product,
 ];
 
@@ -81,12 +81,12 @@ export { BannerUserTargetConfig, type BannerUserTargetConfig as BannerUserTarget
 export { RewardCategory, type RewardCategory as RewardCategoryType } from './RewardCategory';
 export { Reward, type Reward as RewardType } from './Reward';
 export { RewardUserTarget, type RewardUserTarget as RewardUserTargetType } from './RewardUserTarget';
-export { RewardUserTargetConfig, type RewardUserTargetConfig as RewardUserTargetConfigType } from './RewardUserTargetConfig';
 export {RewardAudienceType, type RewardAudienceType as RewardAudienceTypeType} from './RewardAudienceType';
 export {RewardOfferType, type RewardOfferType as RewardOfferTypeType} from './RewardOfferType';
 export {RewardContribution, type RewardContribution as RewardContributionType} from './RewardContribution';
 export {RewardServiceType, type RewardServiceType as RewardServiceTypeType} from './RewardServiceType';
 export {RewardUsage, type RewardUsage as RewardUsageType} from './RewardUsage';
 
- 
+ export { RewardUserTargetConfig, type RewardUserTargetConfig as RewardUserTargetConfigType } from './RewardUserTargetConfig';
+
 
