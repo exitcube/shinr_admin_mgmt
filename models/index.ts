@@ -16,6 +16,14 @@ import { BannerCategory } from './BannerCategory';
 import { BannerUserTarget } from './BannerUserTarget';
 import { BannerAudienceType } from './BannerAudienceType';
 import { BannerUserTargetConfig } from './BannerUserTargetConfig';
+import { RewardCategory } from './RewardCategory';
+import { Reward } from './Reward';
+import { RewardUserTarget } from './RewardUserTarget';
+import { RewardUsage } from './RewardUsage';
+import { RewardOfferType } from './RewardOfferType';
+import { RewardContribution } from './RewardContribution';
+import { RewardAudienceType } from './RewardAudienceType';
+import { RewardServiceType } from './RewardServiceType';
 import { RewardUserTargetConfig} from './RewardUserTargetConfig';
 // import { Product } from './Product';
 
@@ -39,7 +47,15 @@ export const entities = [
     BannerUserTarget,
     BannerAudienceType,
     BannerUserTargetConfig,
-    RewardUserTargetConfig
+    RewardCategory,
+    Reward,
+    RewardUserTarget,
+    RewardUserTargetConfig,
+    RewardOfferType,
+    RewardContribution,
+    RewardAudienceType,
+    RewardServiceType,
+    RewardUsage
     // Product,
 ];
 
@@ -62,6 +78,15 @@ export { BannerCategory, type BannerCategory as BannerCategoryType } from './Ban
 export { BannerUserTarget, type BannerUserTarget as BannerUserTargetType } from './BannerUserTarget';   
 export { BannerAudienceType, type BannerAudienceType as BannerAudienceTypeType } from './BannerAudienceType';
 export { BannerUserTargetConfig, type BannerUserTargetConfig as BannerUserTargetConfigType } from './BannerUserTargetConfig';
-export { RewardUserTargetConfig, type RewardUserTargetConfig as RewardUserTargetConfigType } from './RewardUserTargetConfig';
+export { RewardCategory, type RewardCategory as RewardCategoryType } from './RewardCategory';
+export { Reward, type Reward as RewardType } from './Reward';
+export { RewardUserTarget, type RewardUserTarget as RewardUserTargetType } from './RewardUserTarget';
+export {RewardAudienceType, type RewardAudienceType as RewardAudienceTypeType} from './RewardAudienceType';
+export {RewardOfferType, type RewardOfferType as RewardOfferTypeType} from './RewardOfferType';
+export {RewardContribution, type RewardContribution as RewardContributionType} from './RewardContribution';
+export {RewardServiceType, type RewardServiceType as RewardServiceTypeType} from './RewardServiceType';
+export {RewardUsage, type RewardUsage as RewardUsageType} from './RewardUsage';
+
+ export { RewardUserTargetConfig, type RewardUserTargetConfig as RewardUserTargetConfigType } from './RewardUserTargetConfig';
 
 
