@@ -4,7 +4,7 @@ import { Reward,RewardCategory,RewardAudienceType,RewardContribution,RewardServi
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { CreateRewardBody,UpdateRewardBody } from "./type";
-
+import { TargetAudience } from '../utils/constant';
 
 
 
