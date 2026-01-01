@@ -4,8 +4,15 @@ import {
     Column,
     CreateDateColumn,
     UpdateDateColumn,
+    OneToOne,
+    JoinColumn,
+    ManyToOne,
     
 } from 'typeorm';
+
+import { AdminFile } from './AdminFile';
+import { AdminUser } from './AdminUser';
+
 @Entity('services')
 export class Service {
     @PrimaryGeneratedColumn()
@@ -18,10 +25,17 @@ export class Service {
     displayName: string;
 
     @Column({ nullable: true })
-    imageId: string;
+    imageId: number;
 
-    @Column({ type: 'varchar',nullable: true})
-    targetValue: string;
+    @OneToOne(() => AdminFile, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "imageId" })
+    adminFile: AdminFile;
+
+    @Column({ type: 'varchar', nullable: true })
+    value: string;
+
+    @Column({ nullable: true })
+    description: string;
 
     @Column({ default: true })
     isActive: boolean;
@@ -31,5 +45,21 @@ export class Service {
 
     @UpdateDateColumn()
     updatedAt: Date;
+
+    @Column({ nullable: false })
+    createdBy: number;
+
+    @ManyToOne(() => AdminUser, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "createdBy" })
+    createdByAdminUser: AdminUser;
+
+
+    @Column({ nullable: true })
+    removedBy: number;
+
+    @ManyToOne(() => AdminUser, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "removedBy" })
+    removedByAdminUser: AdminUser;
+
 
 }
