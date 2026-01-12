@@ -22,3 +22,9 @@ export type CarBrandQuery =
     vehicleTypeId: number;
     name: string;
   }
+  export type AddVehicleBody =
+  {
+    model: string;
+    makeId: number;
+    categoryId: number;
+  }

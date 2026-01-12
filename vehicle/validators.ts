@@ -45,3 +45,11 @@ export const updateVehicleBrandValidate = {
     name: Joi.string().required(),
   }),
 };
+
+export const addVehicleValidate = {
+  body: Joi.object({
+    model: Joi.string().required(),
+    makeId: Joi.number().integer().required(),
+    categoryId: Joi.number().integer().required(),
+  }),
+};
