@@ -13,6 +13,6 @@ fastify.put('/update-brand', {preHandler:[adminAuthValidationPreHandler,validati
 fastify.delete('/delete-brand/:id', {preHandler:[adminAuthValidationPreHandler]}, handler.deleteVehicleBrandHandler);
 fastify.get('/brand-listing/:search', {preHandler:[adminAuthValidationPreHandler]}, handler.vehicleBrandListingHandler);
 fastify.post('/add-vehicle',{preHandler:[adminAuthValidationPreHandler,validation(addVehicleValidate)]}, handler.addVehicleHandler);
-  fastify.get('/list-vehicle-types',{ preHandler: [authValidationPreHandler]}, handler.vehicleTypeListingHandler);
-  fastify.post('/add-vehicle-types',{ preHandler: [authValidationPreHandler, validation(addVehicleTypeValidate)]}, handler.addVehicleTypeHandler);
+  fastify.get('/list-vehicle-types',{ preHandler: [adminAuthValidationPreHandler]}, handler.vehicleTypeListingHandler);
+  fastify.post('/add-vehicle-types',{ preHandler: [adminAuthValidationPreHandler, validation(addVehicleTypeValidate)]}, handler.addVehicleTypeHandler);
 }
