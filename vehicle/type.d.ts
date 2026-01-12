@@ -12,3 +12,13 @@ export type CarBrandQuery =
     page?: number;
     limit?: number;
   }
+
+  export type AddVehicleBrandBody =
+  {
+    name: string;
+  }
+  export type UpdateVehicleBrandBody =
+  {
+    vehicleTypeId: number;
+    name: string;
+  }

@@ -32,3 +32,16 @@ export const carSearchValidate = {
 
   body: Joi.object({}),
 };
+
+export const addVehicleBrandValidate = {
+  body: Joi.object({
+    name: Joi.string().required(),
+  }),
+};
+
+export const updateVehicleBrandValidate = {
+  body: Joi.object({
+    vehicleTypeId: Joi.number().integer().required(),
+    name: Joi.string().required(),
+  }),
+};
