@@ -1,10 +1,11 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import { ILike } from "typeorm";
-import { Reward,RewardCategory,RewardAudienceType,RewardContribution,RewardServiceType,RewardUserTargetConfig,RewardUserTarget,Service, RewardOfferType } from "../models/index";
+import { Reward,RewardCategory,RewardAudienceType,RewardContribution,RewardServiceType,RewardUserTargetConfig,RewardUserTarget,Service, RewardOfferType ,ServiceType} from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { CreateRewardBody,UpdateRewardBody } from "./type";
 import { TargetAudience } from '../utils/constant';
+import { In } from "typeorm";
 
 
 
@@ -218,48 +219,62 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
          
 
         if (serviceCategoryIds && Array.isArray(serviceCategoryIds)) {
-          for (const id of serviceCategoryIds) {
-            const service = await serviceRepo.findOne({ where: { id, isActive: true } });
-            if (!service) {
-              throw new APIError(
-                "service not found",
-                400,
-                "TARGET_SERVICE_INVALID",
-                false,
-                "the given service is  is not available"
-              );
-            }
-            const newRewardServiceType = rewardServiceTypeRepo.create({
-              rewardId: newReward.id,
-              serviceId: service.id ,
-              isActive:true,
-            })
 
-            await rewardServiceTypeRepo.save(newRewardServiceType);
-          }
-        }
-        if (targetAudienceIds && Array.isArray(targetAudienceIds)) {
-          for (const id of targetAudienceIds) {
-            const targetAudience = await rewardUserTargetConfigRepo.findOne({
-              where: { id: id, isActive: true },
-            });
-            if (!targetAudience) {
-              throw new APIError(
-                "Target audience not found",
-                400,
-                "TARGET_AUDIENCE_INVALID",
-                false,
-                "the given targetAudience is  is not found"
-              );
-            }
-            const newRewardAudience = rewardAudienceTypeRepo.create({
-              rewardId: newReward.id,
-              rewardConfigId: id,
+          const services:Service[] = await serviceRepo.find({
+            where: {
+              id: In(serviceCategoryIds),
               isActive: true,
-            });
-            await rewardAudienceTypeRepo.save(newRewardAudience);
+            },
+          });
 
+          if (services.length !== serviceCategoryIds.length) {
+            throw new APIError(
+              "service not found",
+              400,
+              "TARGET_SERVICE_INVALID",
+              false,
+              "One or more given services are not available"
+            );
           }
+
+          const rewardServiceTypes = services.map(service=>
+            rewardServiceTypeRepo.create({
+              rewardId: newReward.id,
+              serviceId: service.id,
+              isActive: true,
+            })
+          );
+
+          await rewardServiceTypeRepo.save(rewardServiceTypes);
+        }
+
+        if (targetAudienceIds && Array.isArray(targetAudienceIds)) {
+          const targetAudiences:RewardUserTargetConfig[] = await rewardUserTargetConfigRepo.find({
+            where: {
+              id: In(targetAudienceIds),
+              isActive: true,
+            },
+          });
+
+          if (targetAudiences.length !== targetAudienceIds.length) {
+            throw new APIError(
+              "Target audience not found",
+              400,
+              "TARGET_AUDIENCE_INVALID",
+              false,
+              "One or more given target audiences are not available"
+            );
+          }
+
+          const rewardAudienceTypes = targetAudiences.map(targetAudience =>
+            rewardAudienceTypeRepo.create({
+              rewardId: newReward.id,
+              rewardConfigId: targetAudience.id,
+              isActive: true,
+            })
+          );
+
+          await rewardAudienceTypeRepo.save(rewardAudienceTypes);
         }
 
         reply
@@ -352,47 +367,63 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         if (serviceCategoryIds && Array.isArray(serviceCategoryIds)) {
           const existingRewardServiceTypes = await rewardServiceTypeRepo.update({ rewardId: rewardId }, { isActive: false });
-          for (const id of serviceCategoryIds) {
-            const service = await serviceRepo.findOne({ where: { id, isActive: true } });
-            if (!service) {
-              throw new APIError(
-                "service not found",
-                400,
-                "TARGET_SERVICE_INVALID",
-                false,
-                "the given service is  is not available"
-              );
-            }
-            const newRewardServiceType = rewardServiceTypeRepo.create({
+          const services: Service[] = await serviceRepo.find({
+            where: {
+              id: In(serviceCategoryIds),
+              isActive: true,
+            },
+          });
+
+          if (services.length !== serviceCategoryIds.length) {
+            throw new APIError(
+              "service not found",
+              400,
+              "TARGET_SERVICE_INVALID",
+              false,
+              "One or more given services are not available"
+            );
+          }
+
+          const rewardServiceTypes = services.map(service =>
+            rewardServiceTypeRepo.create({
               rewardId: rewardId,
               serviceId: service.id,
-              isActive:true,
+              isActive: true,
             })
-            await rewardServiceTypeRepo.save(newRewardServiceType);
-          }
+          );
+
+          await rewardServiceTypeRepo.save(rewardServiceTypes);
 
         }
 
         if (targetAudienceIds && Array.isArray(targetAudienceIds)) {
           const existingRewardAudienceTypes = await rewardAudienceTypeRepo.update({ rewardId: rewardId }, { isActive: false });
-          for (const id of targetAudienceIds) {
-            const targetAudience = await rewardUserTargetConfigRepo.findOne({ where: { id, isActive: true } });
-            if (!targetAudience) {
-              throw new APIError(
-                "Target audience not found",
-                400,
-                "TARGET_AUDIENCE_INVALID",
-                false,
-                "the given targetAudience is  is not found"
-              );
-            }
-            const newRewardAudience = rewardAudienceTypeRepo.create({
-              rewardId: rewardId,
-              rewardConfigId: id,
+          const targetAudiences: RewardUserTargetConfig[] = await rewardUserTargetConfigRepo.find({
+            where: {
+              id: In(targetAudienceIds),
               isActive: true,
-            });
-            await rewardAudienceTypeRepo.save(newRewardAudience);
+            },
+          });
+
+          if (targetAudiences.length !== targetAudienceIds.length) {
+            throw new APIError(
+              "Target audience not found",
+              400,
+              "TARGET_AUDIENCE_INVALID",
+              false,
+              "One or more given target audiences are not available"
+            );
           }
+
+          const rewardAudienceTypes = targetAudiences.map(targetAudience =>
+            rewardAudienceTypeRepo.create({
+              rewardId: rewardId,
+              rewardConfigId: targetAudience.id,
+              isActive: true,
+            })
+          );
+
+          await rewardAudienceTypeRepo.save(rewardAudienceTypes);
 
         }
           

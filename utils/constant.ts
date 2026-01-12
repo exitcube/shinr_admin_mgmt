@@ -77,7 +77,7 @@ export enum RewardOwner{
 export enum RewardStatus
 {
    DRAFT="DRAFT",
-   APPROVED="APPROVED"
+   ACTIVE="ACTIVE"
 }
 
 export enum RewardOfferType{

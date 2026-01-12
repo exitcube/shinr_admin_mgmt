@@ -157,7 +157,7 @@ export const createRewardValidate = {
                 })
             }),
 
-        status: Joi.string().valid(RewardStatus.DRAFT, RewardStatus.APPROVED).required().messages({
+        status: Joi.string().valid(RewardStatus.DRAFT, RewardStatus.ACTIVE).required().messages({
             "any.required": "Status is required",
         }),
     }),
@@ -322,7 +322,7 @@ export const updateRewardValidate = {
                 })
             }),
 
-        status: Joi.string().valid(RewardStatus.DRAFT, RewardStatus.APPROVED).optional().messages({
+        status: Joi.string().valid(RewardStatus.DRAFT, RewardStatus.ACTIVE).optional().messages({
             "any.required": "Status is required",
         }),
     }),
