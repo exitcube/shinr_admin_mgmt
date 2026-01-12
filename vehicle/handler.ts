@@ -104,7 +104,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       try {
         const { name } = request.body as AddVehicleBrandBody;
         const vehicleBrandRepo = fastify.db.getRepository(CarMake);
-        const vehicleBrand = vehicleBrandRepo.create({ name });
+        const vehicleBrand = vehicleBrandRepo.create({ name ,isActive:true});
         await vehicleBrandRepo.save(vehicleBrand);
         reply.status(200).send(createSuccessResponse(vehicleBrand, "Vehicle Brand added successfully"));
       }
