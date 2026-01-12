@@ -4,7 +4,7 @@ import { CarSearchQuery, CarBrandQuery } from './type';
 import { createPaginatedResponse ,createSuccessResponse} from '../utils/response';
 import { NotFoundError, APIError } from '../types/errors';
 import { ILike } from 'typeorm';
-import {  AddVehicleBrandBody ,UpdateVehicleBrandBody,AddVehicleBody} from './type';
+import {  AddVehicleBrandBody ,UpdateVehicleBrandBody,AddVehicleBody,AddVehicleTypeBody} from './type';
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   return {
     getCarsModelHandler: async (
@@ -253,6 +253,71 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
       }
     },
+    vehicleTypeListingHandler: async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { search, page = 1, limit = 10 } = request.query as any;
+        const vehicleTypeRepo = fastify.db.getRepository(CarCategory);
 
+        let where: any = {};
+
+        if (search) {
+          where = { name: ILike(`%${search}%`) };
+        }
+        const [vehicleTypes, total] = await vehicleTypeRepo.findAndCount({
+          order: { name: "ASC" },
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+        });
+        const vehicleTypeList = vehicleTypes.map((v: CarCategory) => ({
+          id: v.id,
+          name: v.name,
+        }));
+        reply.status(200).send(createPaginatedResponse(vehicleTypeList, total, page, limit));
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || 'Failed to fetch vehicleTypes',
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || 'VEHICLETYPE_FETCH_FAILED',
+          true,
+          (error as APIError).publicMessage || 'Failed to fetch vehicleTypes'
+        );
+      }
+    },
+    addVehicleTypeHandler: async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { name } = request.body as AddVehicleTypeBody;
+        const vehicleTypeRepo = fastify.db.getRepository(CarCategory);
+        const existing = await vehicleTypeRepo.findOne({ where: { name } });
+        if (existing) {
+          throw new APIError(
+            'Vehicle type already exists',
+            400,
+            'VEHICLETYPE_DUPLICATE',
+            true,
+            'Vehicle type already exists'
+          );
+        }
+        const newVehicleType = vehicleTypeRepo.create({ name, isActive: true });
+        await vehicleTypeRepo.save(newVehicleType);
+        reply.status(201).send(createSuccessResponse(newVehicleType, "VehicleType added successfully"));
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || 'Failed to add vehicle type',
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || 'VEHICLETYPE_ADD_FAILED',
+          true,
+          (error as APIError).publicMessage || 'Failed to add vehicle type'
+        );
+      }
+    },
   }
 }

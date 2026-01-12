@@ -53,3 +53,8 @@ export const addVehicleValidate = {
     categoryId: Joi.number().integer().required(),
   }),
 };
+export const addVehicleTypeValidate = {
+  body: Joi.object({
+    name: Joi.string().required(),
+  }),
+};
