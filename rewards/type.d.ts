@@ -58,3 +58,16 @@ export type UpdateRewardBody={
     maxUsagePeriodValue:number,
     status:string,
 }
+
+export type ListRewardQuery = {
+    search?: string;
+    status?: string;
+    owner?: string;
+    categoryId?: number;
+    vendorId?: number;
+    startTime?: string;
+    endTime?: string;
+    page?: number;
+    limit?: number;
+    sortOrder?: 'ASC' | 'DESC';
+};
