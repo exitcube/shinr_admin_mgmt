@@ -361,6 +361,13 @@ export const listRewardValidate = {
                 'number.base': 'Category ID must be a number',
                 'number.integer': 'Category ID must be an integer',
             }),
+        serviceId: Joi.number()
+            .integer()
+            .optional()
+            .messages({
+                'number.base': 'Service ID must be a number',
+                'number.integer': 'Service ID must be an integer',
+            }),
 
         vendorId: Joi.when('owner', {
             is: RewardOwner.VENDOR,

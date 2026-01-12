@@ -64,6 +64,7 @@ export type ListRewardQuery = {
     status?: string;
     owner?: string;
     categoryId?: number;
+    serviceId?: number;
     vendorId?: number;
     startTime?: string;
     endTime?: string;

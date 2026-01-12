@@ -1,10 +1,10 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import { ILike } from "typeorm";
-import { Reward,RewardCategory,RewardAudienceType,RewardContribution,RewardServiceType,RewardUserTargetConfig,RewardUserTarget,Service, RewardOfferType ,ServiceType} from "../models/index";
+import { Reward, RewardCategory, RewardAudienceType, RewardContribution, RewardServiceType, RewardUserTargetConfig, RewardUserTarget, Service, RewardOfferType, ServiceType } from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
-import { CreateRewardBody,UpdateRewardBody,ListRewardQuery } from "./type";
-import { TargetAudience,RewardOwner } from '../utils/constant';
+import { CreateRewardBody, UpdateRewardBody, ListRewardQuery } from "./type";
+import { TargetAudience, RewardOwner } from '../utils/constant';
 import { In, MoreThanOrEqual, LessThanOrEqual } from "typeorm";
 import { getUtcRangeFromTwoIsoDates, getDayBoundariesFromIso } from "../utils/helper";
 
@@ -13,92 +13,92 @@ import { getUtcRangeFromTwoIsoDates, getDayBoundariesFromIso } from "../utils/he
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
     categoryListingHandler: async (
-          request: FastifyRequest,
-          reply: FastifyReply
-        ): Promise<void> => {
-          try {
-            const { search, page = 1, limit = 10 } = request.query as any;
-    
-            const rewardCategoryRepo = fastify.db.getRepository(RewardCategory);
-    
-            const where: any = { isActive: true };
-            if (search) {
-              where.displayText = ILike(`%${search}%`);
-            }
-    
-            const [rewardCategories, total] = await rewardCategoryRepo.findAndCount(
-              {
-                where,
-                order: { id: "ASC" },
-                skip: (page - 1) * limit,
-                take: limit,
-              }
-            );
-    
-            const rewardCategoriesList = rewardCategories.map(
-              (v: RewardCategory) => ({
-                id: v.id,
-                name: v.displayText,
-              })
-            );
-    
-            reply
-              .status(200)
-              .send(
-                createPaginatedResponse(rewardCategoriesList, total, page, limit)
-              );
-          } catch (error) {
-            throw new APIError(
-              (error as APIError).message || "Failed to search Category",
-              (error as APIError).statusCode || 500,
-              (error as APIError).code || "Category_Fetching_FAILED",
-              true,
-              (error as APIError).publicMessage || "Failed to FetchCategory rewards"
-            );
+      request: FastifyRequest,
+      reply: FastifyReply
+    ): Promise<void> => {
+      try {
+        const { search, page = 1, limit = 10 } = request.query as any;
+
+        const rewardCategoryRepo = fastify.db.getRepository(RewardCategory);
+
+        const where: any = { isActive: true };
+        if (search) {
+          where.displayText = ILike(`%${search}%`);
+        }
+
+        const [rewardCategories, total] = await rewardCategoryRepo.findAndCount(
+          {
+            where,
+            order: { id: "ASC" },
+            skip: (page - 1) * limit,
+            take: limit,
           }
-        },
-         serviceCategoryListingHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
-          try {
-            const { search, page = 1, limit = 10 } = request.query as any;
-    
-            const serviceRepo = fastify.db.getRepository(Service);
-    
-            const where: any = { isActive: true };
-            if (search) {
-              where.displayName = ILike(`%${search}%`);
-            }
-    
-            const [services, total] = await serviceRepo.findAndCount(
-              {
-                where,
-                order: { id: "ASC" },
-                skip: (page - 1) * limit,
-                take: limit,
-              }
-            );
-    
-            const servicesList = services.map(
-              (v: Service) => ({
-                id: v.id,
-                name: v.displayName,
-              })
-            );
-    
-            reply
-              .status(200)
-              .send(
-                createPaginatedResponse(servicesList, total, page, limit)
-              );
-          } catch (error) {
-            throw new APIError(
-              (error as APIError).message || "Failed to search Category",
-              (error as APIError).statusCode || 500,
-              (error as APIError).code || "Category_Fetching_FAILED",
-              true,
-              (error as APIError).publicMessage || "Failed to FetchCategory rewards"
-            );
+        );
+
+        const rewardCategoriesList = rewardCategories.map(
+          (v: RewardCategory) => ({
+            id: v.id,
+            name: v.displayText,
+          })
+        );
+
+        reply
+          .status(200)
+          .send(
+            createPaginatedResponse(rewardCategoriesList, total, page, limit)
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to search Category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Category_Fetching_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to FetchCategory rewards"
+        );
+      }
+    },
+    serviceCategoryListingHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      try {
+        const { search, page = 1, limit = 10 } = request.query as any;
+
+        const serviceRepo = fastify.db.getRepository(Service);
+
+        const where: any = { isActive: true };
+        if (search) {
+          where.displayName = ILike(`%${search}%`);
+        }
+
+        const [services, total] = await serviceRepo.findAndCount(
+          {
+            where,
+            order: { id: "ASC" },
+            skip: (page - 1) * limit,
+            take: limit,
           }
-        },
+        );
+
+        const servicesList = services.map(
+          (v: Service) => ({
+            id: v.id,
+            name: v.displayName,
+          })
+        );
+
+        reply
+          .status(200)
+          .send(
+            createPaginatedResponse(servicesList, total, page, limit)
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to search Category",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Category_Fetching_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to FetchCategory rewards"
+        );
+      }
+    },
     targetAudienceHandler: async (
       request: FastifyRequest,
       reply: FastifyReply
@@ -151,9 +151,9 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    createRewardHandler: async (request: FastifyRequest<{Body:CreateRewardBody}>,reply: FastifyReply): Promise<void> => {
+    createRewardHandler: async (request: FastifyRequest<{ Body: CreateRewardBody }>, reply: FastifyReply): Promise<void> => {
       try {
-        const { owner, vendorId,title, sideText, summary, description,
+        const { owner, vendorId, title, sideText, summary, description,
           rewardCategoryId, serviceCategoryIds, displayCouponPage, displayVendorPage, offerType, percentage,
           maxDiscountAmount, minOrderValue, codeGeneration, priority, targetAudienceIds, startDate, endDate,
           totalGrabLimit, contribution, shinrPercentage, vendorPercentage, maxUsage, maxUsagePeriod,
@@ -167,8 +167,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const rewardContributorRepo = fastify.db.getRepository(RewardContribution);
         const rewardAudienceTypeRepo = fastify.db.getRepository(RewardAudienceType);
         const rewardUserTargetConfigRepo = fastify.db.getRepository(RewardUserTargetConfig);
-         
-          
+
+
 
         const newReward = rewardRepo.create({
           title,
@@ -178,13 +178,13 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           categoryId: rewardCategoryId,
           displaySequence: priority,
           owner,
-          vendorId:vendorId??null,
-          dispCouponPage:displayCouponPage,
-          dispVendorPage:displayVendorPage,
+          vendorId: vendorId ?? null,
+          dispCouponPage: displayCouponPage,
+          dispVendorPage: displayVendorPage,
           singleCode: codeGeneration,
           minOrderValue,
-          startDate:new Date(startDate),
-          endDate: endDate?new Date(endDate):new Date("2099-01-01"),
+          startDate: new Date(startDate),
+          endDate: endDate ? new Date(endDate) : new Date("2099-01-01"),
           grabLimit: totalGrabLimit,
           maxUsage,
           maxUsagePeriod,
@@ -193,12 +193,12 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           status,
           isActive: true,
         });
- 
+
         const newOfferType = rewardOfferTypeRepo.create({
           offerType,
           percentage: percentage ?? null,
           maxAmount: maxDiscountAmount,
-          isActive:true,
+          isActive: true,
         });
 
         await rewardOfferTypeRepo.save(newOfferType);
@@ -208,7 +208,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           contributor: contribution,
           shinrPercentage: shinrPercentage ?? null,
           vendorPercentage: vendorPercentage ?? null,
-          isActive:true,
+          isActive: true,
         });
 
         await rewardContributorRepo.save(newContribution);
@@ -217,11 +217,11 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         newReward.rewardContributorId = newContribution.id;
 
         await rewardRepo.save(newReward);
-         
+
 
         if (serviceCategoryIds && Array.isArray(serviceCategoryIds)) {
 
-          const services:Service[] = await serviceRepo.find({
+          const services: Service[] = await serviceRepo.find({
             where: {
               id: In(serviceCategoryIds),
               isActive: true,
@@ -238,7 +238,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             );
           }
 
-          const rewardServiceTypes = services.map(service=>
+          const rewardServiceTypes = services.map(service =>
             rewardServiceTypeRepo.create({
               rewardId: newReward.id,
               serviceId: service.id,
@@ -250,7 +250,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
 
         if (targetAudienceIds && Array.isArray(targetAudienceIds)) {
-          const targetAudiences:RewardUserTargetConfig[] = await rewardUserTargetConfigRepo.find({
+          const targetAudiences: RewardUserTargetConfig[] = await rewardUserTargetConfigRepo.find({
             where: {
               id: In(targetAudienceIds),
               isActive: true,
@@ -293,7 +293,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
       }
     },
-    updateRewardHandler: async (request: FastifyRequest<{Body:UpdateRewardBody}>,reply: FastifyReply): Promise<void> => {
+    updateRewardHandler: async (request: FastifyRequest<{ Body: UpdateRewardBody }>, reply: FastifyReply): Promise<void> => {
       try {
         const { rewardId, owner, vendorId, title, sideText, summary, description,
           rewardCategoryId, serviceCategoryIds, displayCouponPage, displayVendorPage, offerType, percentage,
@@ -320,7 +320,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             "the given reward is not found"
           );
         }
-        existingReward.updatedBy=adminId;
+        existingReward.updatedBy = adminId;
         if (title) existingReward.title = title;
         if (description) existingReward.description = description;
         if (summary) existingReward.summary = summary;
@@ -356,8 +356,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           const existingContribution = await rewardContributorRepo.update({ id: existingReward.rewardContributorId }, { isActive: false });
           const newContribution = await rewardContributorRepo.create({
             contributor: contribution,
-            shinrPercentage: shinrPercentage??null,
-            vendorPercentage: vendorPercentage??null,
+            shinrPercentage: shinrPercentage ?? null,
+            vendorPercentage: vendorPercentage ?? null,
             isActive: true,
           })
           await rewardContributorRepo.save(newContribution);
@@ -427,7 +427,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           await rewardAudienceTypeRepo.save(rewardAudienceTypes);
 
         }
-          
+
         reply
           .status(200)
           .send(createSuccessResponse(existingReward, "reward Updated Succefully"));
@@ -443,7 +443,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    singleRewardHandler: async (request: FastifyRequest,reply: FastifyReply) => {
+    singleRewardHandler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const rewardId = (request.params as any).id;
 
@@ -537,10 +537,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       reply: FastifyReply
     ) => {
       try {
-        const { search, status, categoryId, owner, vendorId, startTime, endTime, page = 1, limit = 10 } = request.query as ListRewardQuery;
+        const { search, status, categoryId, serviceId, owner, vendorId, startTime, endTime, page = 1, limit = 10 } = request.query as ListRewardQuery;
 
         const rewardRepo = fastify.db.getRepository(Reward);
-        const rstRepo = fastify.db.getRepository(RewardServiceType);
+        const rewardServiceTypeRepo = fastify.db.getRepository(RewardServiceType);
 
         const where: any = { isActive: true };
 
@@ -561,31 +561,26 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           const { utcEnd } = getDayBoundariesFromIso(endTime);
           where.endDate = LessThanOrEqual(utcEnd);
         }
+        let rewardIdsByService: number[] = [];
 
-        const rewardIdsFromService: number[] = [];
-
-        if (search) {
-          const rewardServiceRows = await rstRepo.find({
-            where: {
-              isActive: true,
-              service: { displayName: ILike(`%${search}%`) }
-            },
-            relations: ["service"],
-            select: ["rewardId"],
+        if (serviceId) {
+          const rows = await rewardServiceTypeRepo.find({
+            where: { isActive: true, serviceId },
+            select: ['rewardId'],
           });
-
-          rewardIdsFromService.push(...rewardServiceRows.map((r: any) => r.rewardId));
+          rewardIdsByService = rows.map((r: any) => r.rewardId);
         }
+        where.id = rewardIdsByService.length ? In(rewardIdsByService) : In([0]);
 
         let finalWhere: any = where;
 
         if (search) {
           finalWhere = [
             { ...where, title: ILike(`%${search}%`) },
+            { ...where, sideText: ILike(`%${search}%`) },
             { ...where, vendor: { name: ILike(`%${search}%`) } },
             { ...where, vendor: { vendorCode: ILike(`%${search}%`) } },
             { ...where, rewardCategory: { displayText: ILike(`%${search}%`) } },
-            ...(rewardIdsFromService.length ? [{ ...where, id: In(rewardIdsFromService) }] : [])
           ];
         } else {
           finalWhere = where;
