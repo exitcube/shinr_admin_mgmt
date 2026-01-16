@@ -429,7 +429,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           .createQueryBuilder("make")
           .where("make.isActive = :active", { active: true })
           .loadRelationCountAndMap(
-            "make.vehicleCount", // virtual property
+            "make.vehicleCount", 
             "make.cars",
             "car",
             (qb: SelectQueryBuilder<Car>) => qb.where("car.isActive = true")
