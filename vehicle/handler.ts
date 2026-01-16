@@ -424,6 +424,9 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const { searchBrandId, page = 1, limit = 10 } = request.query as any;
 
         const repo = fastify.db.getRepository(CarMake);
+        const totalBrands = await repo.count({
+          where: { isActive: true },
+        });
 
         const qb = repo
           .createQueryBuilder("make")
@@ -451,7 +454,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }));
 
         reply.status(200).send(
-          createPaginatedResponse(response, total, page, limit)
+          createPaginatedResponse([{ListedBrands:totalBrands}, response], total, page, limit)
         );
       }
       catch (error) {
