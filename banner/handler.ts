@@ -1,9 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import {  UpdateBannerCategoryBody, ListBannerQuery,BannerApprovalBody } from "./type";
+import {  UpdateBannerCategoryBody, ListBannerBody,BannerApprovalBody,ListBannerBodySearch } from "./type";
 import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType,BannerUserTarget} from "../models";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
-import { ILike } from "typeorm";
+import { ILike,In } from "typeorm";
 import {
   BannerReviewStatus,
   BannerStatus,
@@ -227,8 +227,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       reply: FastifyReply
     ): Promise<void> => {
       try {
+        const search = (request.query as ListBannerBodySearch).search;
         const {
-          search,
           status,
           reviewStatus,
           categoryId,
@@ -239,17 +239,21 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           page = 1,
           limit = 10,
           sortOrder = "ASC",
-        } = request.query as ListBannerQuery;
+        } = request.body as ListBannerBody || {};
         const bannerRepo = fastify.db.getRepository(Banner);
 
         const where: any = { isActive: true };
 
-        if (status) where.status = status;
-        if (reviewStatus) where.reviewStatus = reviewStatus;
-        if (categoryId) where.categoryId = categoryId;
+        const statusArray = Array.isArray(status)? status: status? [status]: [];
+        if (statusArray.length) where.status = In(statusArray);
+        const reviewStatusArray = Array.isArray(reviewStatus)? reviewStatus: reviewStatus? [reviewStatus]: [];
+        if (reviewStatusArray.length) where.reviewStatus = In(reviewStatusArray);
+        const categoryArray = Array.isArray(categoryId)? categoryId: categoryId? [categoryId]: [];
+        if (categoryArray.length) where.categoryId = In(categoryArray);
         if (owner) where.owner = owner;
         if (owner === BannerOwner.VENDOR && vendorId) {
-          where.vendorId = vendorId;
+          const vendorArray = Array.isArray(vendorId) ? vendorId : vendorId? [vendorId]: [];
+          if (vendorArray.length) where.vendorId = In(vendorArray);
         }
         if (startTime && endTime) {
           const { utcStart, utcEnd } = getUtcRangeFromTwoIsoDates(startTime, endTime);
