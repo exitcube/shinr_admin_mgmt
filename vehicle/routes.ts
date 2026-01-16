@@ -15,4 +15,6 @@ fastify.get('/brand-listing/:search', {preHandler:[adminAuthValidationPreHandler
 fastify.post('/add-vehicle',{preHandler:[adminAuthValidationPreHandler,validation(addVehicleValidate)]}, handler.addVehicleHandler);
 fastify.put('/edit-vehicle/:id', {preHandler:[adminAuthValidationPreHandler,validation(editVehicleValidate)]}, handler.editVehicleHandler);
 fastify.post('/delete-vehicle/:id', {preHandler:[adminAuthValidationPreHandler]}, handler.deleteVehicleHandler);
+fastify.get('/vehicle-models-listing', {preHandler:[adminAuthValidationPreHandler]}, handler.vehicleModelsListingHandler);
+fastify.get('/vehicle-brand-listing', {preHandler:[adminAuthValidationPreHandler]}, handler.vehiclesBrandListingHandler);
 }
