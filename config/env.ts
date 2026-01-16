@@ -1,15 +1,18 @@
 import dotenv from "dotenv";
 import path from "path";
 
-const isProduction = process.env.NODE_ENV === "production";
+// PM2 detection
+const isRunningUnderPM2 = !!process.env.PM2_HOME;
 
-if (!isProduction) {
-  dotenv.config(); // Load .env
-  const envFile = `.env/.env.${process.env.NODE_ENV || "development"}`;
-  dotenv.config({ path: path.resolve(process.cwd(), envFile) });
-  console.log(`Loaded env file: ${envFile}`);
+// Local development ONLY
+if (!isRunningUnderPM2) {
+  const env = process.env.NODE_ENV || "development";
+  const envFile = path.resolve(process.cwd(), `.env/.env.${env}`);
+
+  dotenv.config({ path: envFile });
+  console.log(`Loaded local env file: ${envFile}`);
 } else {
-  console.log("Running in production, using environment variables from process.env (e.g. PM2)");
+  console.log("Running under PM2, using ecosystem.config.js env variables");
 }
 
 // Ensure required JWT env vars are present
