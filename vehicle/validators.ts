@@ -60,3 +60,10 @@ export const editVehicleValidate = {
     categoryId: Joi.number().integer().optional(),
   }),
 };
+
+export const vehicleModelsListingValidate = {
+  body: Joi.object({
+    searchBrandId: Joi.array().items(Joi.number()).optional(),
+    searchVehicleTypeId: Joi.array().items(Joi.number()).optional(),
+  }),
+};
