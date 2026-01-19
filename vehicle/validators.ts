@@ -67,3 +67,16 @@ export const vehicleModelsListingValidate = {
     searchVehicleTypeId: Joi.array().items(Joi.number()).optional(),
   }),
 };
+export const addVehicleTypeValidate = {
+  body: Joi.object({
+    name: Joi.string().required(),
+  }),
+};
+export const updateVehicleTypeValidate = {
+  body: Joi.object({
+    name: Joi.string().required(),
+  }),
+  query: Joi.object({
+    vehicleTypeId: Joi.number().integer().required(),
+  })
+};

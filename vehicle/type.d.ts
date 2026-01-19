@@ -41,3 +41,16 @@ export type CarBrandQuery =
     searchBrandId: number[];
     searchVehicleTypeId: number[];
   }
+  
+  export type AddVehicleTypeBody =
+  {
+    name?: string;
+  }
+  export type UpdateVehicleTypeBody =
+  {
+    name?: string;
+  }
+  export type UpdateVehicleTypeQuery =
+  {
+    vehicleTypeId: number;
+  } 
