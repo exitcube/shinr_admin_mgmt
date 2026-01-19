@@ -28,3 +28,10 @@ export type CarBrandQuery =
     makeId: number;
     categoryId: number;
   }
+
+  export type editVehicleBody =
+  {
+    model: string;
+    makeId: number;
+    categoryId: number;
+  }

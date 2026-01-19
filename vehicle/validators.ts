@@ -53,3 +53,10 @@ export const addVehicleValidate = {
     categoryId: Joi.number().integer().required(),
   }),
 };
+export const editVehicleValidate = {
+  body: Joi.object({
+    model: Joi.string().optional(),
+    makeId: Joi.number().integer().optional(),
+    categoryId: Joi.number().integer().optional(),
+  }),
+};

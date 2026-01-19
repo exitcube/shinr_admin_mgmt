@@ -3,8 +3,8 @@ import { Car, CarMake,CarCategory, } from '../models/index';
 import { CarSearchQuery, CarBrandQuery } from './type';
 import { createPaginatedResponse ,createSuccessResponse} from '../utils/response';
 import { NotFoundError, APIError } from '../types/errors';
-import { ILike } from 'typeorm';
-import {  AddVehicleBrandBody ,UpdateVehicleBrandBody,AddVehicleBody} from './type';
+import { ILike ,SelectQueryBuilder } from 'typeorm';
+import {  AddVehicleBrandBody ,UpdateVehicleBrandBody,AddVehicleBody,editVehicleBody} from './type';
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   return {
     getCarsModelHandler: async (
@@ -104,6 +104,16 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       try {
         const { name } = request.body as AddVehicleBrandBody;
         const vehicleBrandRepo = fastify.db.getRepository(CarMake);
+        const existingVehicleBrand = await vehicleBrandRepo.findOne({ where: { name,isActive:true} });
+        if (existingVehicleBrand) {
+          throw new APIError(
+            "Vehicle brand already exists",
+            400,
+            "VEHICLE_BRAND_EXISTS",
+            false,
+            "Vehicle brand already exists"
+          );
+        }
         const vehicleBrand = vehicleBrandRepo.create({ name ,isActive:true});
         await vehicleBrandRepo.save(vehicleBrand);
         reply.status(200).send(createSuccessResponse(vehicleBrand, "Vehicle Brand added successfully"));
@@ -123,6 +133,16 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       try {
         const { vehicleTypeId, name } = request.body as UpdateVehicleBrandBody;
         const vehicleBrandRepo = fastify.db.getRepository(CarMake);
+        const existingVehicleBrand = await vehicleBrandRepo.findOne({ where: { name ,isActive:true} });
+        if (existingVehicleBrand) {
+          throw new APIError(
+            "Vehicle brand already exists",
+            400,
+            "VEHICLE_BRAND_EXISTS",
+            false,
+            "Vehicle brand already exists"
+          );
+        }
         const result = await vehicleBrandRepo.update(
           { id: vehicleTypeId ,isActive:true},
           { name }
@@ -237,6 +257,19 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             );
         }
 
+        const existingVehicle=await vehicleRepo.findOne({where:{model,makeId,categoryId,isActive:true}});
+
+        if(existingVehicle)
+        {
+          throw new APIError(
+              "Vehicle already exists",
+              400,
+              "VEHICLE_EXISTS",
+              false,
+              "Vehicle already exists"
+            );
+        }
+
         const vehicle=vehicleRepo.create({model,makeId,categoryId,isActive:true});
         await vehicleRepo.save(vehicle);
         reply.status(200).send(createSuccessResponse(vehicle,"Vehicle added successfully"));
@@ -251,6 +284,187 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).publicMessage || "Failed to add Vehicle"
         );
 
+      }
+    },
+    editVehicleHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+      try {
+        const vehicleId = (request.params as any).id;
+        const { model, makeId, categoryId } = request.body as editVehicleBody;
+
+        const vehicleRepo = fastify.db.getRepository(Car);
+        const carCategoryRepo = fastify.db.getRepository(CarCategory);
+        const carMakeRepo = fastify.db.getRepository(CarMake);
+
+        const existingVehicle = await vehicleRepo.findOne({ where: { id: vehicleId, isActive: true } });
+
+        if (!existingVehicle) {
+          throw new APIError(
+            "Vehicle not found",
+            400,
+            "VEHICLE_NOT_FOUND",
+            false,
+            "Vehicle not found"
+          );
+        }
+        if (categoryId) {
+          const carCategory = await carCategoryRepo.findOne({ where: { id: categoryId, isActive: true } });
+          if (!carCategory) {
+            throw new APIError(
+              "Category not found",
+              400,
+              "CATEGORY_NOT_FOUND",
+              false,
+              "Category not found"
+            );
+          }
+          existingVehicle.categoryId = categoryId;
+        }
+        if (makeId) {
+          const carMake = await carMakeRepo.findOne({ where: { id: makeId, isActive: true } });
+          if (!carMake) {
+            throw new APIError(
+              "Make not found",
+              400,
+              "MAKE_NOT_FOUND",
+              false,
+              "Make not found"
+            );
+          }
+          existingVehicle.makeId = makeId;
+        }
+        if (model) existingVehicle.model = model;
+        await vehicleRepo.save(existingVehicle);
+        reply.status(200).send(createSuccessResponse(existingVehicle, "Vehicle updated successfully"));
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to update Vehicle",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Vehicle_Update_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to update Vehicle"
+        );
+
+      }
+    },
+     deleteVehicleHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+       try {
+         const vehicleId = (request.params as any).id;
+         const vehicleRepo = fastify.db.getRepository(Car);
+         const existingVehicle = await vehicleRepo.findOne({ where: { id: vehicleId, isActive: true } });
+         if (!existingVehicle) {
+           throw new APIError(
+             "Vehicle not found",
+             400,
+             "VEHICLE_NOT_FOUND",
+             false,
+             "Vehicle not found"
+           );
+         }
+         existingVehicle.isActive = false;
+         await vehicleRepo.save(existingVehicle);
+         reply.status(200).send(createSuccessResponse(existingVehicle, "Vehicle deleted successfully"));
+       }
+       catch (error) {
+         throw new APIError(
+           (error as APIError).message || "Failed to delete Vehicle",
+           (error as APIError).statusCode || 500,
+           (error as APIError).code || "Vehicle_Delete_FAILED",
+           true,
+           (error as APIError).publicMessage || "Failed to delete Vehicle"
+         );
+       }
+    },
+    vehicleModelsListingHandler:async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+      try {
+        const { searchBrandId, searchVehicleTypeId, page = 1, limit = 10 } = request.query as any;
+
+        const vehicleRepo = fastify.db.getRepository(Car);
+
+        const where: any = { isActive: true };
+        if (searchBrandId) {
+          where.makeId = searchBrandId;
+        }
+        if (searchVehicleTypeId) {
+          where.categoryId = searchVehicleTypeId;
+        }
+
+        const [vehicleModels, total] = await vehicleRepo.findAndCount(
+          {
+            where,
+            order: { id: "ASC" },
+            skip: (page - 1) * limit,
+            take: limit,
+            relations: ["make", "category"],
+          }
+        );
+
+        const vehicleModelsList = vehicleModels.map(
+          (v: Car) => ({
+            id: v.id,
+            model: v.model,
+            make: v.make.name,
+            category: v.category.name,
+          })
+        );
+        reply.status(200).send(createPaginatedResponse(vehicleModelsList, total, page, limit));
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to get Vehicle ",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "Vehicle_Fetching_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to get Vehicle "
+        );
+      }
+    },
+    vehiclesBrandListingHandler:async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+      try {
+        const { searchBrandId, page = 1, limit = 10 } = request.query as any;
+
+        const repo = fastify.db.getRepository(CarMake);
+        const totalBrands = await repo.count({
+          where: { isActive: true },
+        });
+
+        const qb = repo
+          .createQueryBuilder("make")
+          .where("make.isActive = :active", { active: true })
+          .loadRelationCountAndMap(
+            "make.vehicleCount", 
+            "make.cars",
+            "car",
+            (qb: SelectQueryBuilder<Car>) => qb.where("car.isActive = true")
+          )
+          .orderBy("make.id", "ASC")
+          .skip((page - 1) * limit)
+          .take(limit);
+
+        if (searchBrandId) {
+          qb.andWhere("make.id = :searchBrandId", { searchBrandId });
+        }
+
+        const [makes, total] = await qb.getManyAndCount();
+
+        const response = makes.map((make: any) => ({
+          id: make.id,
+          name: make.name,
+          numberOfVehicle: make.vehicleCount,
+        }));
+
+        reply.status(200).send(
+          createPaginatedResponse([{ListedBrands:totalBrands}, response], total, page, limit)
+        );
+      }
+      catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to get VehiclesBrand",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "VehiclesBrand_Fetching_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to get VehiclesBrand"
+        );
       }
     },
 
