@@ -6,7 +6,7 @@ import { carSearchValidate,addVehicleBrandValidate,updateVehicleBrandValidate,ad
 
 export default async function vehicleRoutes(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   const handler = controller(fastify, opts);
-  fastify.get('/', { preHandler: [authValidationPreHandler, validation(carSearchValidate)] }, handler.getCarsModelHandler);
+  fastify.get('/car-listing', { preHandler: [authValidationPreHandler, validation(carSearchValidate)] }, handler.getCarsModelHandler);
   fastify.get('/car-brands',{ preHandler: [authValidationPreHandler]}, handler.getCarsBrandHandler);
 fastify.post('/add-brand',{preHandler:[adminAuthValidationPreHandler,validation(addVehicleBrandValidate)]}, handler.addVehicleBrandHandler);
 fastify.put('/update-brand', {preHandler:[adminAuthValidationPreHandler,validation(updateVehicleBrandValidate)]}, handler.updateVehicleBrandHandler);
