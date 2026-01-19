@@ -633,5 +633,71 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
+    deleteRewardHandler: async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const adminId = (request as any).user?.userId;
+        const id = (request.params as any).id;
+        const rewardRepo = fastify.db.getRepository(Reward);
+        const existingReward = await rewardRepo.findOne({ where: { id, isActive: true } });
+        if (!existingReward) {
+          throw new APIError(
+            "Reward not found",
+            404,
+            "REWARD_NOT_FOUND",
+            true,
+            "Reward not found"
+          );
+        }
+        await fastify.db.query(
+          `
+          WITH updated_reward AS (
+            UPDATE reward
+            SET
+              "isActive" = false,
+              "removedBy" = $2
+            WHERE id = $1
+              AND "isActive" = true
+            RETURNING id
+          ),
+          updated_audience AS (
+            UPDATE "rewardAudienceType"
+            SET "isActive" = false
+            WHERE "rewardId" = (SELECT id FROM updated_reward)
+            RETURNING "rewardId"
+          ),
+          updated_service AS (
+            UPDATE "rewardServiceType"
+            SET "isActive" = false
+            WHERE "rewardId" = (SELECT id FROM updated_reward)
+            RETURNING "rewardId"
+          ),
+          updated_user_target AS (
+            UPDATE "rewardUserTarget"
+            SET "isActive" = false
+            WHERE "rewardId" = (SELECT id FROM updated_reward)
+            RETURNING "rewardId"
+          )
+          UPDATE "rewardUsage"
+          SET "isActive" = false
+          WHERE "rewardId" = (SELECT id FROM updated_reward);
+          `,
+          [id, adminId]
+        );
+
+        reply
+          .status(200)
+          .send(
+            createSuccessResponse({ deleted: 1 }, "Reward deleted successfully")
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to delete reward",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "REWARD_DELETE_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to delete reward"
+        );
+      }
+    },
   }
 }

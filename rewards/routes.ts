@@ -13,4 +13,5 @@ export default async function rewardsRoutes(fastify: FastifyInstance, opts: Fast
     fastify.put('/update-reward' ,{preHandler:[adminAuthValidationPreHandler,validation(updateRewardValidate)]},handler.updateRewardHandler);
     fastify.get('/getSingleReward/:id',{ preHandler: [adminAuthValidationPreHandler] },handler.singleRewardHandler);
     fastify.post('/list-rewards',{ preHandler: [adminAuthValidationPreHandler,validation(listRewardValidate)] },handler.listRewardHandler);
+    fastify.post('/delete-reward/:id',{ preHandler: [adminAuthValidationPreHandler] },handler.deleteRewardHandler);
 }
