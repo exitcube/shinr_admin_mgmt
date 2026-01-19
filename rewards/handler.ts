@@ -545,16 +545,11 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const where: any = { isActive: true };
 
-        const statusArray = Array.isArray(status)? status: status? [status]: [];
-        if (statusArray.length) where.status = In(statusArray);
-
-        const categoryArray = Array.isArray(categoryId)? categoryId: categoryId? [categoryId]: [];
-        if (categoryArray.length) where.categoryId = In(categoryArray);
-
+        if (status && Array.isArray(status)) where.status = In(status);
+        if (categoryId && Array.isArray(categoryId)) where.categoryId = In(categoryId);
         if (owner) where.owner = owner;
         if (owner === RewardOwner.VENDOR && vendorId) {
-          const vendorArray = Array.isArray(vendorId) ? vendorId : vendorId? [vendorId]: [];
-          if (vendorArray.length) where.vendorId = In(vendorArray);
+          if (Array.isArray(vendorId)) where.vendorId = In(vendorId);
         }
         if (startTime && endTime) {
           const { utcStart, utcEnd } = getUtcRangeFromTwoIsoDates(startTime, endTime);
@@ -569,22 +564,18 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
         let rewardIdsByService: number[] = [];
 
-        const serviceArray = Array.isArray(serviceId)? serviceId: serviceId? [serviceId]: [];
-
-        if (serviceArray.length) {
+        if (serviceId && Array.isArray(serviceId)) {
           const rows = await rewardServiceTypeRepo.find({
             where: {
               isActive: true,
-              serviceId: In(serviceArray),
+              serviceId: In(serviceId),
             },
             select: ['rewardId'],
           });
           rewardIdsByService = rows.map((r: any) => r.rewardId);
         }
 
-        if (rewardIdsByService.length) {
-          where.id = In(rewardIdsByService); 
-        }
+        if (rewardIdsByService.length) where.id = In(rewardIdsByService);
 
         let finalWhere: any = where;
 

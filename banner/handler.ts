@@ -244,16 +244,12 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const where: any = { isActive: true };
 
-        const statusArray = Array.isArray(status)? status: status? [status]: [];
-        if (statusArray.length) where.status = In(statusArray);
-        const reviewStatusArray = Array.isArray(reviewStatus)? reviewStatus: reviewStatus? [reviewStatus]: [];
-        if (reviewStatusArray.length) where.reviewStatus = In(reviewStatusArray);
-        const categoryArray = Array.isArray(categoryId)? categoryId: categoryId? [categoryId]: [];
-        if (categoryArray.length) where.categoryId = In(categoryArray);
+        if (status && Array.isArray(status)) where.status = In(status);
+        if (reviewStatus && Array.isArray(reviewStatus)) where.reviewStatus = In(reviewStatus);
+        if (categoryId && Array.isArray(categoryId)) where.categoryId = In(categoryId);
         if (owner) where.owner = owner;
         if (owner === BannerOwner.VENDOR && vendorId) {
-          const vendorArray = Array.isArray(vendorId) ? vendorId : vendorId? [vendorId]: [];
-          if (vendorArray.length) where.vendorId = In(vendorArray);
+          if (Array.isArray(vendorId)) where.vendorId = In(vendorId);
         }
         if (startTime && endTime) {
           const { utcStart, utcEnd } = getUtcRangeFromTwoIsoDates(startTime, endTime);
@@ -295,10 +291,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           reviewStatus: banner.reviewStatus,
           status: banner.status,
           owner: banner.owner,
+          vendor: banner.vendor?.name,
           displaySequence: banner.displaySequence,
           startTime: banner.startTime,
           endTime: banner.endTime,
-          vendor: banner.vendor?.name,
         }));
 
         reply
