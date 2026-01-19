@@ -1,11 +1,12 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import { ILike } from "typeorm";
+import { ILike, LessThanOrEqual, MoreThanOrEqual } from "typeorm";
 import { Reward,RewardCategory,RewardAudienceType,RewardContribution,RewardServiceType,RewardUserTargetConfig,RewardUserTarget,Service, RewardOfferType ,ServiceType} from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
-import { CreateRewardBody,UpdateRewardBody } from "./type";
-import { TargetAudience } from '../utils/constant';
+import { CreateRewardBody,UpdateRewardBody,ListRewardBody,ListRewardBodySearch } from "./type";
+import { TargetAudience,RewardOwner } from '../utils/constant';
 import { In } from "typeorm";
+import { getDayBoundariesFromIso, getUtcRangeFromTwoIsoDates } from "../utils/helper";
 
 
 
@@ -528,6 +529,107 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "REWARD_FETCH_FAILED",
           true,
           (error as APIError).publicMessage || "Failed to fetch reward"
+        );
+      }
+    },
+    listRewardHandler: async (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => {
+      try {
+        const search = (request.query as ListRewardBodySearch).search;
+        const { status, categoryId, serviceId, owner, vendorId, startTime, endTime, page = 1, limit = 10 } = request.body as ListRewardBody || {};
+
+        const rewardRepo = fastify.db.getRepository(Reward);
+        const rewardServiceTypeRepo = fastify.db.getRepository(RewardServiceType);
+
+        const where: any = { isActive: true };
+
+        if (status && Array.isArray(status)) where.status = In(status);
+        if (categoryId && Array.isArray(categoryId)) where.categoryId = In(categoryId);
+        if (owner) where.owner = owner;
+        if (owner === RewardOwner.VENDOR && vendorId) {
+          if (Array.isArray(vendorId)) where.vendorId = In(vendorId);
+        }
+        if (startTime && endTime) {
+          const { utcStart, utcEnd } = getUtcRangeFromTwoIsoDates(startTime, endTime);
+          where.startDate = MoreThanOrEqual(utcStart);
+          where.endDate = LessThanOrEqual(utcEnd);
+        } else if (startTime) {
+          const { utcStart } = getDayBoundariesFromIso(startTime);
+          where.startDate = MoreThanOrEqual(utcStart);
+        } else if (endTime) {
+          const { utcEnd } = getDayBoundariesFromIso(endTime);
+          where.endDate = LessThanOrEqual(utcEnd);
+        }
+        let rewardIdsByService: number[] = [];
+
+        if (serviceId && Array.isArray(serviceId)) {
+          const rows = await rewardServiceTypeRepo.find({
+            where: {
+              isActive: true,
+              serviceId: In(serviceId),
+            },
+            select: ['rewardId'],
+          });
+          rewardIdsByService = rows.map((r: any) => r.rewardId);
+        }
+
+        if (rewardIdsByService.length) where.id = In(rewardIdsByService);
+
+        let finalWhere: any = where;
+
+        if (search) {
+          finalWhere = [
+            { ...where, title: ILike(`%${search}%`) },
+            { ...where, sideText: ILike(`%${search}%`) },
+            { ...where, vendor: { name: ILike(`%${search}%`) } },
+            { ...where, vendor: { vendorCode: ILike(`%${search}%`) } },
+            { ...where, rewardCategory: { displayText: ILike(`%${search}%`) } },
+          ];
+        } else {
+          finalWhere = where;
+        }
+
+        const [rewards, total] = await rewardRepo.findAndCount(
+          {
+            where: finalWhere,
+            order: { id: "ASC" },
+            skip: (page - 1) * limit,
+            take: limit,
+            relations: ["vendor", "rewardCategory"]
+          }
+        );
+
+        const rewardsList = rewards.map(
+          (reward: any) => ({
+            id: reward.id,
+            title: reward.title,
+            category: {
+              displayText: reward.rewardCategory?.displayText,
+            },
+            owner: reward.owner,
+            vendor: {
+              name: reward.vendor?.name,
+            },
+            startDate: reward.startDate,
+            endDate: reward.endDate,
+            status: reward.status,
+          })
+        );
+
+        reply
+          .status(200)
+          .send(
+            createPaginatedResponse(rewardsList, total, page, limit)
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message || "Failed to fetch rewards",
+          (error as APIError).statusCode || 500,
+          (error as APIError).code || "REWARDS_FETCH_FAILED",
+          true,
+          (error as APIError).publicMessage || "Failed to fetch rewards"
         );
       }
     },

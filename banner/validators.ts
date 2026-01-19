@@ -26,69 +26,79 @@ export const listBannerValidate = {
         'string.min': 'Search term must be at least 3 characters long',
         'string.base': 'Search must be a string',
       }),
+  }),
 
-    reviewStatus: Joi.string()
-      .valid(...Object.values(BannerReviewStatus).map(s => s.value))
-      .optional()
-      .messages({
-        'any.only': 'Review status must be one of the allowed values',
-        'string.base': 'Review status must be a string',
-      }),
-
-    status: Joi.string()
-      .valid(...Object.values(BannerStatus).map(s => s.value))
+  body: Joi.object({
+    status: Joi.array()
+      .items(
+        Joi.string().valid(
+          ...Object.values(BannerStatus).map(s => s.value)
+        )
+      )
       .optional()
       .messages({
         'any.only': 'Status must be one of the allowed values',
-        'string.base': 'Status must be a string',
+        'array.base': 'Status must be an array of allowed values',
+      }),
+
+    reviewStatus: Joi.array()
+      .items(
+        Joi.string().valid(
+          ...Object.values(BannerReviewStatus).map(s => s.value)
+        )
+      )
+      .optional()
+      .messages({
+        'any.only': 'Review status must be one of the allowed values',
+        'array.base': 'Review status must be an array of allowed values',
       }),
 
     owner: Joi.string()
       .valid(...Object.values(BannerOwner))
       .optional()
       .messages({
-        'any.only': 'Owner must be either SHINR or VENDOR',
+        'any.only': 'Owner must be one of the allowed values',
         'string.base': 'Owner must be a string',
       }),
 
-    categoryId: Joi.number()
-      .integer()
+    categoryId: Joi.array()
+      .items(Joi.number().integer())
       .optional()
       .messages({
         'number.base': 'Category ID must be a number',
         'number.integer': 'Category ID must be an integer',
+        'array.base': 'Category IDs must be an array of integers',
       }),
 
-    vendorId: Joi.when('owner', {
-      is: BannerOwner.VENDOR,
-      then: Joi.number()
-        .integer()
-        .optional()
-        .messages({
-          'number.base': 'Vendor ID must be a number',
-          'number.integer': 'Vendor ID must be an integer',
+    vendorId: Joi.array()
+      .items(Joi.number().integer())
+      .optional()
+      .when('owner', {
+        is: BannerOwner.VENDOR,
+        then: Joi.optional(),
+        otherwise: Joi.forbidden().messages({
+          'any.unknown': 'Vendor ID is only allowed when owner is VENDOR',
         }),
-      otherwise: Joi.forbidden().messages({
-        'any.unknown': 'Vendor ID is only allowed when owner is VENDOR',
+      })
+      .messages({
+        'number.base': 'Vendor ID must be a number',
+        'number.integer': 'Vendor ID must be an integer',
+        'array.base': 'Vendor IDs must be an array of integers',
       }),
-    }),
 
     startTime: Joi.date()
       .iso()
       .optional()
       .messages({
-        'string.pattern.base':
-          'Start time must be ISO-8601 datetime with timezone',
+        'date.format': 'Start time must be ISO-8601 datetime with timezone',
       }),
 
     endTime: Joi.date()
       .iso()
       .optional()
       .messages({
-        'string.pattern.base':
-          'End time must be ISO-8601 datetime with timezone',
+        'date.format': 'End time must be ISO-8601 datetime with timezone',
       }),
-
 
     sortOrder: Joi.string()
       .uppercase()

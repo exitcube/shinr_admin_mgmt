@@ -327,3 +327,113 @@ export const updateRewardValidate = {
         }),
     }),
 };
+export const listRewardValidate = {
+    query: Joi.object({
+        search: Joi.string()
+            .min(3)
+            .optional()
+            .messages({
+                'string.min': 'Search term must be at least 3 characters long',
+                'string.base': 'Search must be a string',
+            }),
+    }),
+    body: Joi.object({
+        status: Joi.array()
+            .items(Joi.string().valid(...Object.values(RewardStatus)))
+            .optional()
+            .messages({
+                'any.only': 'Status must be one of the allowed values',
+                'array.base': 'Status must be an array of allowed values',
+            }),
+
+        owner: Joi.string()
+            .valid(...Object.values(RewardOwner))
+            .optional()
+            .messages({
+                'any.only': 'Owner must be one of the allowed values',
+                'string.base': 'Owner must be a string',
+            }),
+
+        categoryId: Joi.array()
+            .items(Joi.number().integer())
+            .optional()
+            .messages({
+                'number.base': 'Category ID must be a number',
+                'number.integer': 'Category ID must be an integer',
+                'array.base': 'Category IDs must be an array of integers',
+            }),
+
+        serviceId: Joi.array()
+            .items(Joi.number().integer())
+            .optional()
+            .messages({
+                'number.base': 'Service ID must be a number',
+                'number.integer': 'Service ID must be an integer',
+                'array.base': 'Service IDs must be an array of integers',
+            }),
+
+        vendorId: Joi.array()
+            .items(Joi.number().integer())
+            .optional()
+            .when('owner', {
+                is: RewardOwner.VENDOR,
+                then: Joi.optional(),
+                otherwise: Joi.forbidden().messages({
+                    'any.unknown': 'Vendor ID is only allowed when owner is VENDOR',
+                }),
+            })
+            .messages({
+                'number.base': 'Vendor ID must be a number',
+                'number.integer': 'Vendor ID must be an integer',
+                'array.base': 'Vendor IDs must be an array of integers',
+            }),
+
+        startTime: Joi.date()
+            .iso()
+            .optional()
+            .messages({
+                'date.format': 'Start time must be ISO-8601 datetime with timezone',
+            }),
+
+        endTime: Joi.date()
+            .iso()
+            .optional()
+            .messages({
+                'date.format': 'End time must be ISO-8601 datetime with timezone',
+            }),
+
+        sortOrder: Joi.string()
+            .uppercase()
+            .valid('ASC', 'DESC')
+            .optional()
+            .default('ASC')
+            .messages({
+                'any.only': 'Sort order must be either ASC or DESC',
+                'string.base': 'Sort order must be a string',
+            }),
+
+        page: Joi.number()
+            .integer()
+            .min(1)
+            .optional()
+            .default(1)
+            .messages({
+                'number.base': 'Page must be a number',
+                'number.integer': 'Page must be an integer',
+                'number.min': 'Page must be at least 1',
+            }),
+
+        limit: Joi.number()
+            .integer()
+            .min(1)
+            .max(100)
+            .optional()
+            .default(10)
+            .messages({
+                'number.base': 'Limit must be a number',
+                'number.integer': 'Limit must be an integer',
+                'number.min': 'Limit must be at least 1',
+                'number.max': 'Limit cannot exceed 100',
+            }),
+    }),
+};

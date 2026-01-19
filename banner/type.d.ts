@@ -4,8 +4,10 @@ export type UpdateBannerCategoryBody = {
     updatingText:string;
 }
 
-export type ListBannerQuery = {
+export type ListBannerBodySearch = {
     search?: string;
+}
+export type ListBannerBody = {
     status?: string;
     reviewStatus?: string;
     owner?: string;

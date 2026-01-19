@@ -1,9 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import {  UpdateBannerCategoryBody, ListBannerQuery,BannerApprovalBody } from "./type";
+import {  UpdateBannerCategoryBody, ListBannerBody,BannerApprovalBody,ListBannerBodySearch } from "./type";
 import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType,BannerUserTarget} from "../models";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
-import { ILike } from "typeorm";
+import { ILike,In } from "typeorm";
 import {
   BannerReviewStatus,
   BannerStatus,
@@ -227,8 +227,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
       reply: FastifyReply
     ): Promise<void> => {
       try {
+        const search = (request.query as ListBannerBodySearch).search;
         const {
-          search,
           status,
           reviewStatus,
           categoryId,
@@ -239,17 +239,17 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           page = 1,
           limit = 10,
           sortOrder = "ASC",
-        } = request.query as ListBannerQuery;
+        } = request.body as ListBannerBody || {};
         const bannerRepo = fastify.db.getRepository(Banner);
 
         const where: any = { isActive: true };
 
-        if (status) where.status = status;
-        if (reviewStatus) where.reviewStatus = reviewStatus;
-        if (categoryId) where.categoryId = categoryId;
+        if (status && Array.isArray(status)) where.status = In(status);
+        if (reviewStatus && Array.isArray(reviewStatus)) where.reviewStatus = In(reviewStatus);
+        if (categoryId && Array.isArray(categoryId)) where.categoryId = In(categoryId);
         if (owner) where.owner = owner;
         if (owner === BannerOwner.VENDOR && vendorId) {
-          where.vendorId = vendorId;
+          if (Array.isArray(vendorId)) where.vendorId = In(vendorId);
         }
         if (startTime && endTime) {
           const { utcStart, utcEnd } = getUtcRangeFromTwoIsoDates(startTime, endTime);
@@ -291,10 +291,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           reviewStatus: banner.reviewStatus,
           status: banner.status,
           owner: banner.owner,
+          vendor: banner.vendor?.name,
           displaySequence: banner.displaySequence,
           startTime: banner.startTime,
           endTime: banner.endTime,
-          vendor: banner.vendor?.name,
         }));
 
         reply
