@@ -5,7 +5,7 @@ import path from 'path';
 // Import all entities from models index
 import { entities } from '../models';
 
-
+const isRds = !!process.env.DB_HOST?.includes('rds.amazonaws.com');
 const baseConfig: DataSourceOptions = {
     type: 'postgres',
     host: process.env.DB_HOST || 'localhost',
@@ -17,7 +17,7 @@ const baseConfig: DataSourceOptions = {
     migrations: [path.join(__dirname, '../migrations/*.{ts,js}')],
     synchronize: false,
     logging: ENV.NODE_ENV === 'development',
-    ssl: ENV.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: isRds ? { rejectUnauthorized: false } : false,
     extra: {
         max: ENV.NODE_ENV === 'production' ? 20 : 10,
         min: ENV.NODE_ENV === 'production' ? 5 : 2,
