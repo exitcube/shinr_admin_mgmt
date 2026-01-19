@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import controller from './handler';
 import { adminAuthValidationPreHandler, authValidationPreHandler} from '../utils/authValidation';
 import { validation } from '../utils/validation';
-import { carSearchValidate,addVehicleBrandValidate,updateVehicleBrandValidate,addVehicleValidate,editVehicleValidate } from './validators';
+import { carSearchValidate,addVehicleBrandValidate,updateVehicleBrandValidate,addVehicleValidate,editVehicleValidate,vehicleModelsListingValidate  } from './validators';
 
 export default async function vehicleRoutes(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   const handler = controller(fastify, opts);
@@ -15,6 +15,6 @@ fastify.get('/brand-listing/:search', {preHandler:[adminAuthValidationPreHandler
 fastify.post('/add-vehicle',{preHandler:[adminAuthValidationPreHandler,validation(addVehicleValidate)]}, handler.addVehicleHandler);
 fastify.put('/edit-vehicle/:id', {preHandler:[adminAuthValidationPreHandler,validation(editVehicleValidate)]}, handler.editVehicleHandler);
 fastify.post('/delete-vehicle/:id', {preHandler:[adminAuthValidationPreHandler]}, handler.deleteVehicleHandler);
-fastify.get('/vehicle-models-listing', {preHandler:[adminAuthValidationPreHandler]}, handler.vehicleModelsListingHandler);
+fastify.post('/vehicle-models-listing', {preHandler:[adminAuthValidationPreHandler, validation(vehicleModelsListingValidate)]}, handler.vehicleModelsListingHandler);
 fastify.get('/vehicle-brand-listing', {preHandler:[adminAuthValidationPreHandler]}, handler.vehiclesBrandListingHandler);
 }

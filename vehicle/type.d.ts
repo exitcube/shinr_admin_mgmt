@@ -35,3 +35,9 @@ export type CarBrandQuery =
     makeId: number;
     categoryId: number;
   }
+
+  export type vehicleModelsListingBody =
+  {
+    searchBrandId: number[];
+    searchVehicleTypeId: number[];
+  }

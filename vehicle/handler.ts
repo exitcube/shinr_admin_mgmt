@@ -3,8 +3,8 @@ import { Car, CarMake,CarCategory, } from '../models/index';
 import { CarSearchQuery, CarBrandQuery } from './type';
 import { createPaginatedResponse ,createSuccessResponse} from '../utils/response';
 import { NotFoundError, APIError } from '../types/errors';
-import { ILike ,SelectQueryBuilder } from 'typeorm';
-import {  AddVehicleBrandBody ,UpdateVehicleBrandBody,AddVehicleBody,editVehicleBody} from './type';
+import { ILike ,SelectQueryBuilder,In } from 'typeorm';
+import {  AddVehicleBrandBody ,UpdateVehicleBrandBody,AddVehicleBody,editVehicleBody,vehicleModelsListingBody} from './type';
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions) {
   return {
     getCarsModelHandler: async (
@@ -377,17 +377,26 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     vehicleModelsListingHandler:async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
       try {
-        const { searchBrandId, searchVehicleTypeId, page = 1, limit = 10 } = request.query as any;
+        const { search,page = 1, limit = 10 } = request.query as any;
+        const { searchBrandId, searchVehicleTypeId } = request.body as vehicleModelsListingBody;
 
         const vehicleRepo = fastify.db.getRepository(Car);
 
         const where: any = { isActive: true };
-        if (searchBrandId) {
-          where.makeId = searchBrandId;
+
+        if (search) {
+          where.model = ILike(`%${search}%`);
         }
-        if (searchVehicleTypeId) {
-          where.categoryId = searchVehicleTypeId;
+
+        if (searchBrandId && Array.isArray(searchBrandId)) {
+          where.makeId = In(searchBrandId);
         }
+
+        if (searchVehicleTypeId && Array.isArray(searchVehicleTypeId)) {
+          where.categoryId = In(searchVehicleTypeId);
+        }
+
+
 
         const [vehicleModels, total] = await vehicleRepo.findAndCount(
           {
@@ -398,6 +407,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             relations: ["make", "category"],
           }
         );
+
+          
 
         const vehicleModelsList = vehicleModels.map(
           (v: Car) => ({
