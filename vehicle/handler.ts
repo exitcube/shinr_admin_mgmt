@@ -432,7 +432,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     vehiclesBrandListingHandler:async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
       try {
-        const { searchBrandId, page = 1, limit = 10 } = request.query as any;
+        const { searchBrandName, page = 1, limit = 10 } = request.query as any;
 
         const repo = fastify.db.getRepository(CarMake);
         const totalBrands = await repo.count({
@@ -452,8 +452,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           .skip((page - 1) * limit)
           .take(limit);
 
-        if (searchBrandId) {
-          qb.andWhere("make.id = :searchBrandId", { searchBrandId });
+        if (searchBrandName) {
+          qb.andWhere("make.name LIKE :searchBrandName", { searchBrandName: `%${searchBrandName}%`});
         }
 
         const [makes, total] = await qb.getManyAndCount();
@@ -614,7 +614,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
     },
     getVehicleTypeListHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
       try {
-        const { searchVehicleTypeId, page = 1, limit = 10 } = request.query as any;
+        const { searchVehicleTypeName, page = 1, limit = 10 } = request.query as any;
 
         const repo = fastify.db.getRepository(CarCategory);
         const totalBrands = await repo.count({
@@ -634,8 +634,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           .skip((page - 1) * limit)
           .take(limit);
 
-        if (searchVehicleTypeId) {
-          qb.andWhere("carCategory.id = :searchVehicleTypeId", { searchVehicleTypeId });
+        if (searchVehicleTypeName) {
+          qb.andWhere("carCategory.name LIKE :searchVehicleTypeName", { searchVehicleTypeName: `%${searchVehicleTypeName}%` });
         }
 
         const [VehicleTypes, total] = await qb.getManyAndCount();
