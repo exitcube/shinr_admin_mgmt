@@ -23,5 +23,5 @@ jobs:
             cd /shinr/shinr_admin_mgmt
             git pull origin main
             npm install --production
-            npm run build
+            npm run build:prod
             pm2 restart shinr-admin
