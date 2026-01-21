@@ -15,10 +15,14 @@ export async function buildApp() {
   // Register plugins
   // registering cors -- REMOVE ON PRODUCTION
    await fastify.register(cors, {
-  origin: true, // reflects request origin
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-});
+   origin: [
+    'http://localhost:3000',
+    'https://admin.shinrtech.com',
+  ], // reflects request origin
+   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+   allowedHeaders: ["Content-Type", "Authorization"],
+   credentials: true,
+ });
   await fastify.register(mult)
   await fastify.register(typeormPlugin);
   await fastify.register(errorHandlerPlugin);
