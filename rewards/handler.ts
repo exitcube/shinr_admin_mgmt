@@ -456,12 +456,12 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const audienceTypeRepo = fastify.db.getRepository(RewardAudienceType);
         const rewardUserTargetConfigRepo = fastify.db.getRepository(RewardUserTargetConfig);
         const audienceTypes = await audienceTypeRepo.find({
-          where: { id: rewardId, isActive: true },
+          where: { rewardId: rewardId, isActive: true },
         });
         const targetAudienceDetails = [];
         for (const audienceType of audienceTypes) {
           const config = await rewardUserTargetConfigRepo.findOne({
-            where: { id: audienceType.rewardUserTargetConfigId, isActive: true },
+            where: { id: audienceType.rewardConfigId, isActive: true },
           });
           if (config) {
             targetAudienceDetails.push({
