@@ -29,3 +29,14 @@ export const createAdminUserValidate = {
     joiningDate: Joi.date().iso().required()
   })
 };
+
+export const editAdminUserValidate = {
+  body: Joi.object({
+    userName: Joi.string().min(3).optional(),
+    newRole: Joi.string()
+    .optional()
+    .valid(...ADMIN_ALLOWED_ROLES.map(role => Object.values(role)[0].value)),
+    email: Joi.string().email().optional(),
+    joiningDate: Joi.date().iso().optional()
+  })
+};
