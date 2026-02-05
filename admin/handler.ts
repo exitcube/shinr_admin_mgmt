@@ -326,7 +326,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           role,
           page = 1,
           limit = 10,
-        } = request.body as adminUserListingBody;
+        } = request.body as adminUserListingBody || {};
 
         const adminRepo = fastify.db.getRepository(AdminUser);
 
