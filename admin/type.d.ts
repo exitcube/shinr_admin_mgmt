@@ -20,3 +20,8 @@ export type editAdminUserBody={
     email?:string;
      joiningDate?: Date;
 }
+export type adminUserListingBody={
+    role?:string;
+    page?:number;
+    limit?:number;
+}
