@@ -422,7 +422,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           categoryId,
           owner,
           vendorId,
-          homePageView,
+          homePageView:Boolean(homePageView),
           displaySequence: priority,
           targetValue,
           startTime: startTimeValue,
