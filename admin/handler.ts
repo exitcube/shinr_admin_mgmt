@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginOptions, FastifyRequest, FastifyReply } from 'fastify';
-import { refreshRequestBody, adminLoginBody, createAdminUserBody } from './type';
+import { refreshRequestBody, adminLoginBody, createAdminUserBody, editAdminUserBody } from './type';
 import bcrypt from "bcrypt";
 import { generateAdminRefreshToken, signAdminAccessToken, verifyAdminRefreshToken, verifyAdminAccessToken } from '../utils/jwt';
 import { createSuccessResponse,createPaginatedResponse } from '../utils/response';
@@ -7,6 +7,7 @@ import { APIError } from '../types/errors';
 import { RefreshTokenStatus,ADMIN_ALLOWED_ROLES } from '../utils/constant';
 import { AdminUser, AdminToken } from "../models/index"
 import { ILike } from 'typeorm';
+import { create } from 'domain';
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
@@ -173,5 +174,85 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
+    editAdminUserHandler:async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const { adminId } = request.query as any;
+
+        const { userName, newRole, email, joiningDate } =
+          request.body as editAdminUserBody;
+
+        const adminRepo = fastify.db.getRepository(AdminUser);
+
+        const adminUser = await adminRepo.findOne({
+          where: { id: adminId, isActive: true },
+        });
+        if (!adminUser) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "INVALID_ID",
+            false,
+            "Invalid admin user id",
+          );
+        }
+
+        if (userName) adminUser.userName = userName;
+        if (newRole) adminUser.role = newRole;
+        if (email) adminUser.email = email;
+        if (joiningDate) adminUser.joiningDate = joiningDate;
+        await adminRepo.save(adminUser);
+
+        return reply
+          .status(200)
+          .send(
+            createSuccessResponse(adminUser, "Admin user updated successfully"),
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message,
+          (error as APIError).statusCode || 400,
+          (error as APIError).code || "EDIT_ADMIN_USER_FAILED",
+          true,
+          (error as APIError).publicMessage ||
+            "Failed to edit admin user. Please try again later.",
+        );
+      }
+    },
+    deleteAdminUserHandler:async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const { adminId } = request.query as any;
+
+        const adminRepo = fastify.db.getRepository(AdminUser);
+        const adminUser = await adminRepo.findOne({
+          where: { id: adminId, isActive: true },
+        });
+        if (!adminUser) {
+          throw new APIError(
+            "Bad Request",
+            400,
+            "INVALID_ID",
+            false,
+            "Invalid admin user id",
+          );
+        }
+        adminUser.isActive = false;
+        await adminRepo.save(adminUser);
+        return reply
+          .status(200)
+          .send(
+            createSuccessResponse(adminUser, "Admin user deleted successfully"),
+          );
+      } catch (error) {
+        throw new APIError(
+          (error as APIError).message,
+          (error as APIError).statusCode || 400,
+          (error as APIError).code || "DELETE_ADMIN_USER_FAILED",
+          true,
+          (error as APIError).publicMessage ||
+            "Failed to delete admin user. Please try again later.",
+        );
+      }
+    },
+
   };
 }

@@ -13,3 +13,10 @@ export type createAdminUserBody={
     email:string;
     joiningDate: Date;
 }
+
+export type editAdminUserBody={
+    userName?:string;
+    newRole?:string;
+    email?:string;
+     joiningDate?: Date;
+}
