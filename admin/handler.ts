@@ -126,6 +126,19 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         const defaultPassword = "Admin@123";
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+        const existingUser = await adminRepo.findOne({
+          where: [{ email }],
+        });
+
+        if (existingUser) {
+          throw new APIError(
+            "User already exists",
+            400,
+            "USER_ALREADY_EXISTS",
+            true,
+            "User already exists",
+          );
+        }
 
         const NewAdminUser = await adminRepo.create({
           userName: userName,
