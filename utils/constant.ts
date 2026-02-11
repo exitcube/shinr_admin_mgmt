@@ -46,9 +46,10 @@ export const FILE_PROVIDER={
     S3:'S3'
 }
 
-export const  ADMIN_FILE_CATEGORY={
-    BANNER:'BANNER_IMAGE',
-}
+export const ADMIN_FILE_CATEGORY = {
+  BANNER: "BANNER_IMAGE",
+  GENERAL: "GENERAL",
+};
 
 export const BANNER_IMAGE_ALLOWED_MIMETYPE = [
   "image/png",

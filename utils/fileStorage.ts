@@ -145,3 +145,49 @@ export function getLocalFilePath(storageLocation: string): string {
   if (path.isAbsolute(storageLocation)) return storageLocation;
   return path.join(process.cwd(), storageLocation);
 }
+
+export interface FileStreamResult {
+  stream: NodeJS.ReadableStream;
+  mimeType: string;
+}
+
+/**
+ * Returns a readable stream and mime type for a stored file (LOCAL or S3).
+ * Use for download / serve by id.
+ */
+export async function getFileStream(
+  provider: string,
+  storageLocation: string,
+  mimeType: string
+): Promise<FileStreamResult> {
+  if (provider === FILE_PROVIDER.LOCAL) {
+    const filePath = getLocalFilePath(storageLocation);
+    const stream = fs.createReadStream(filePath);
+    return { stream, mimeType };
+  }
+  if (provider === FILE_PROVIDER.S3) {
+    try {
+      const s3 = await import("@aws-sdk/client-s3");
+      const client = new s3.S3Client({
+        region: process.env.AWS_REGION!,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        },
+      });
+      const res = await client.send(
+        new s3.GetObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: storageLocation,
+        })
+      );
+      if (!res.Body) throw new Error("S3 object body empty");
+      return { stream: res.Body as NodeJS.ReadableStream, mimeType };
+    } catch (err) {
+      throw new Error(
+        "Failed to stream from S3. Ensure @aws-sdk/client-s3 is installed and S3 is configured."
+      );
+    }
+  }
+  throw new Error(`Unknown file provider: ${provider}`);
+}
