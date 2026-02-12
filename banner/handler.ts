@@ -381,7 +381,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           homePageView,
         } = body;
 
-        const filePath = await fileUpload(bannerImg, adminId);
+        const uploadResult = await fileUpload(bannerImg, adminId);
 
         const fileRepo = fastify.db.getRepository(File);
         const adminFileRepo = fastify.db.getRepository(AdminFile);
@@ -393,12 +393,12 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           fastify.db.getRepository(BannerAudienceType);
 
         const newFile = fileRepo.create({
-          fileName: bannerImg.filename,
-          storageLocation: filePath,
+          fileName: uploadResult.fileName,
+          storageLocation: uploadResult.storageLocation,
           mimeType: bannerImg.mimetype,
           sizeBytes: bannerImg.sizeBytes,
-          provider: FILE_PROVIDER.LOCAL,
-          url: `https://yourdomain.com/uploads/${bannerImg.filename}`,
+          provider: uploadResult.provider,
+          url: uploadResult.url,
           isActive: true,
         });
         await fileRepo.save(newFile);
@@ -654,15 +654,15 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             [banner.bgImageId]
           );
 
-          const filePath = await fileUpload(bannerImg, adminId);
+          const uploadResult = await fileUpload(bannerImg, adminId);
 
           const newFile = fileRepo.create({
-            fileName: bannerImg.filename,
-            storageLocation: filePath,
+            fileName: uploadResult.fileName,
+            storageLocation: uploadResult.storageLocation,
             mimeType: bannerImg.mimetype,
             sizeBytes: bannerImg.sizeBytes,
-            provider: FILE_PROVIDER.LOCAL,
-            url: `https://yourdomain.com/uploads/${bannerImg.filename}`,
+            provider: uploadResult.provider,
+            url: uploadResult.url,
             isActive: true,
           });
           await fileRepo.save(newFile);

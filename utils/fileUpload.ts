@@ -1,31 +1,28 @@
 import { FastifyRequest } from "fastify";
 import { MultipartValue, MultipartFile } from "@fastify/multipart";
-import { join } from "path";
-import fs from "fs";
 import { NormalizedFile, ParsedMultipart } from "../types";
 import sharp from "sharp";
+import { storeFile, type StoreFileResult } from "./fileStorage";
 
-export async function getDimension(files:NormalizedFile): Promise<any> {
+export async function getDimension(files: NormalizedFile): Promise<any> {
   const buffer = await files.toBuffer();
   const metadata = await sharp(buffer).metadata();
   return {
     width: metadata.width,
-    height: metadata.height
+    height: metadata.height,
   };
-
 }
 
-export async function fileUpload(files:any,userId:any): Promise<any> {
-   
-      const uploadFolder = join(__dirname, "../uploads");
-      await fs.promises.mkdir(uploadFolder, { recursive: true });
-      const updatedName = `$USERID_${userId}_${Date.now()}.jpg`;
-      const filePath = join(uploadFolder, updatedName);
-      const buffer = await files.toBuffer();
-      const metadata = await sharp(buffer).metadata();
-      await fs.promises.writeFile(filePath, buffer);
-
-  return filePath ;
+/**
+ * Uploads a file to local storage or S3 (if configured).
+ * Uses a hashed filename so links are unguessable and cannot be enumerated.
+ * Returns storageLocation, url, provider, and original fileName for the File entity.
+ */
+export async function fileUpload(
+  file: NormalizedFile,
+  userId?: string
+): Promise<StoreFileResult> {
+  return storeFile(file, userId);
 }
 
 //  use thi on every multiplart request to parse files and fields

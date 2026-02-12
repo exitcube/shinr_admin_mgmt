@@ -1,9 +1,16 @@
 # Node modules
 node_modules/
 dist/
+uploads/
 
-# Environment files
-# .env
+# Ignore all env files inside env folder
+env/*.env
+
+# Ignore any other env files (optional safety)
+*.env
+
+# Allow example env file
+!env/.env.example
 
 # Logs
 *.log
