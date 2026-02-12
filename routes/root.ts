@@ -23,7 +23,7 @@ export default async function routes(
   fastify.register(serviceRoutes,{prefix: '/service'});
   fastify.register(bannerRoutes, { prefix : '/banner'});
   fastify.register(adminLoginRoutes, { prefix: '/admin' });
-  fastify.register(fileRoutes, { prefix: '/admin' });
+  fastify.register(fileRoutes, { prefix: '/files' });
   fastify.register(rewardsRoutes, { prefix : '/rewards'});
   fastify.register(vendorRoutes, { prefix : '/vendor'});
 
