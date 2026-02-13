@@ -539,28 +539,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
             const users = await userRepo.find({
               where: { mobile: In(allPhoneVariants), isActive: true },
-              select: ["id", "mobile"],
+              select: ["id"],
             });
 
-            const userIdSet = new Set<number>();
-            const userMobileIndex = new Map<string, number>();
-
-            for (const user of users) {
-              userIdSet.add(user.id);
-              userMobileIndex.set(user.mobile, user.id);
-              userMobileIndex.set(normalizePhone(user.mobile), user.id);
-            }
-
-            for (const phone of phones) {
-              const variants = getPhoneVariants(phone);
-              for (const variant of variants) {
-                const matchedUserId = userMobileIndex.get(variant);
-                if (matchedUserId) {
-                  userIdSet.add(matchedUserId);
-                  break;
-                }
-              }
-            }
+            const userIdSet = new Set<number>(users.map((user: User) => user.id));
 
             if (!userIdSet.size) {
               throw new APIError(
