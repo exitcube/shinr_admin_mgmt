@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import {  UpdateBannerCategoryBody, ListBannerBody,BannerApprovalBody,ListBannerBodySearch } from "./type";
-import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType,BannerUserTarget} from "../models";
+import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType,BannerUserTarget, User} from "../models";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
 import { ILike,In } from "typeorm";
@@ -10,14 +10,15 @@ import {
   TargetAudience,FILE_PROVIDER,
   BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION,
   BANNER_APPROVAL_ACTIONS,
-  BannerOwner
+  BannerOwner,
+  allowedManualMimeTypes
 } from "../utils/constant";
 import { MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { createBannerValidateSchema,updateBannerValidateSchema } from "./validators";
 import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
-import sharp from "sharp";
-import { EntityManager } from "typeorm";
 import { getUtcRangeFromTwoIsoDates,getDayBoundariesFromIso } from "../utils/helper";
+import { extractPhonesFromExcelBuffer, getPhoneVariants, normalizePhone } from "./helper";
+
 
  
 
@@ -310,10 +311,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    createBannerHandler: async (
-      request: FastifyRequest,
-      reply: FastifyReply
-    ): Promise<void> => {
+    createBannerHandler: async ( request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const adminId = (request as any).user?.userId;
         const { body, files } = await parseMultipart(request);
@@ -389,8 +387,9 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const bannerUserTargetConfigRepo = fastify.db.getRepository(
           BannerUserTargetConfig
         );
-        const bannerAudienceTypeRepo =
-          fastify.db.getRepository(BannerAudienceType);
+        const bannerAudienceTypeRepo =fastify.db.getRepository(BannerAudienceType);
+        const bannerUserTargetRepo = fastify.db.getRepository(BannerUserTarget);
+        const userRepo = fastify.db.getRepository(User);
 
         const newFile = fileRepo.create({
           fileName: uploadResult.fileName,
@@ -435,27 +434,154 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         await bannerRepo.save(newBanner);
 
         if (targetAudienceId && Array.isArray(targetAudienceId)) {
-          for (const id of targetAudienceId) {
-            const targetAudience = await bannerUserTargetConfigRepo.findOne({
-              where: { id: id, isActive: true },
-            });
-            if(!targetAudience)
-            {
-               throw new APIError(
-            "Target audience not found",
-            400,
-            "TARGET_AUDIENCE_INVALID",
-            false,
-            "the given targetAudience is  is not found"
+          const targetAudienceIds = targetAudienceId.map((id: string) =>
+            Number(id)
           );
+          const targetAudiences = await bannerUserTargetConfigRepo.find({
+            where: { id: In(targetAudienceIds), isActive: true },
+          });
+
+          if (targetAudiences.length !== targetAudienceIds.length) {
+            throw new APIError(
+              "Target audience not found",
+              400,
+              "TARGET_AUDIENCE_INVALID",
+              false,
+              "One or more given target audiences are not available"
+            );
+          }
+
+          for (const targetAudience of targetAudiences) {
+            const newBannerAudeince = bannerAudienceTypeRepo.create({
+              bannerId: newBanner.id,
+              bannerConfigId: targetAudience.id,
+              isActive: true,
+            });
+            await bannerAudienceTypeRepo.save(newBannerAudeince);
+          }
+
+          const manualSelectedUserConfig = targetAudiences.find(
+            (item: BannerUserTargetConfig) =>
+              item.category === TargetAudience.MANUAL.value &&
+              item.isFile &&
+              item.value==="SELECTED_CUSTOMER"
+          );
+
+          if (manualSelectedUserConfig) {
+            const fieldName = manualSelectedUserConfig.fileFieldName;
+            const manualFile = files?.selectedCustomer[0];
+            if (!manualFile) {
+              throw new APIError(
+                "Bad Request",
+                400,
+                "MANUAL_FILE_REQUIRED",
+                false,
+                `${fieldName} file is required for manual target audience.`
+              );
             }
-              const newBannerAudeince = bannerAudienceTypeRepo.create({
+
+
+            if (!allowedManualMimeTypes.includes(manualFile.mimetype)) {
+              throw new APIError(
+                "Bad Request",
+                400,
+                "MANUAL_FILE_INVALID_MIMETYPE",
+                false,
+                "Selected customer file must be an Excel file."
+              );
+            }
+
+            const manualUploadResult = await fileUpload(manualFile, adminId);
+            const manualFileRecord = fileRepo.create({
+              fileName: manualUploadResult.fileName,
+              storageLocation: manualUploadResult.storageLocation,
+              mimeType: manualFile.mimetype,
+              sizeBytes: manualFile.sizeBytes,
+              provider: manualUploadResult.provider,
+              url: manualUploadResult.url,
+              isActive: true,
+            });
+            await fileRepo.save(manualFileRecord);
+
+            const manualAdminFile = adminFileRepo.create({
+              adminId,
+              fileId: manualFileRecord.id,
+              category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
+              isActive: true,
+            });
+            await adminFileRepo.save(manualAdminFile);
+
+            const manualFileBuffer = await manualFile.toBuffer();
+            const phones = await extractPhonesFromExcelBuffer(manualFileBuffer);
+
+            if (!phones.length) {
+              throw new APIError(
+                "Bad Request",
+                400,
+                "MANUAL_FILE_INVALID",
+                false,
+                "Selected customer file has no phone numbers."
+              );
+            }
+
+            const allPhoneVariants = Array.from(
+              new Set(phones.flatMap((phone) => getPhoneVariants(phone)))
+            );
+
+            if (!allPhoneVariants.length) {
+              throw new APIError(
+                "Bad Request",
+                400,
+                "MANUAL_FILE_INVALID",
+                false,
+                "Selected customer file has no valid phone numbers."
+              );
+            }
+
+            const users = await userRepo.find({
+              where: { mobile: In(allPhoneVariants), isActive: true },
+              select: ["id", "mobile"],
+            });
+
+            const userIdSet = new Set<number>();
+            const userMobileIndex = new Map<string, number>();
+
+            for (const user of users) {
+              userIdSet.add(user.id);
+              userMobileIndex.set(user.mobile, user.id);
+              userMobileIndex.set(normalizePhone(user.mobile), user.id);
+            }
+
+            for (const phone of phones) {
+              const variants = getPhoneVariants(phone);
+              for (const variant of variants) {
+                const matchedUserId = userMobileIndex.get(variant);
+                if (matchedUserId) {
+                  userIdSet.add(matchedUserId);
+                  break;
+                }
+              }
+            }
+
+            if (!userIdSet.size) {
+              throw new APIError(
+                "Bad Request",
+                400,
+                "MANUAL_USERS_NOT_FOUND",
+                false,
+                "No active users found for the phone numbers in selected customer file."
+              );
+            }
+
+            const bannerUserTargets = Array.from(userIdSet).map((userId) =>
+              bannerUserTargetRepo.create({
                 bannerId: newBanner.id,
-                bannerConfigId: id,
+                userId,
                 isActive: true,
-              });
-              await bannerAudienceTypeRepo.save(newBannerAudeince);
-            
+              })
+            );
+
+            await bannerUserTargetRepo.save(bannerUserTargets);
           }
         }
         reply
