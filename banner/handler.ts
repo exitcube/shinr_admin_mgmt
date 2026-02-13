@@ -468,7 +468,6 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           );
 
           if (manualSelectedUserConfig) {
-            const fieldName = manualSelectedUserConfig.fileFieldName;
             const manualFile = files?.selectedCustomer[0];
             if (!manualFile) {
               throw new APIError(
@@ -476,7 +475,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
                 400,
                 "MANUAL_FILE_REQUIRED",
                 false,
-                `${fieldName} file is required for manual target audience.`
+                `selectedCustomer file is required for manual target audience.`
               );
             }
 
