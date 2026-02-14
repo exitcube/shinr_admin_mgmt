@@ -25,3 +25,42 @@ export type BannerApprovalBody={
     action:'approve' | 'reject';
     rejectReason?:string;
 }
+
+
+export type ProcessManualLocationConfigParams = {
+  locationFile?: UploadableFile;
+  adminId: string | number;
+  bannerId: number;
+  fileRepo: Repository<File>;
+  adminFileRepo: Repository<AdminFile>;
+  bannerLocationRepo: Repository<BannersByLocation>;
+};
+
+export type SaveFileAndAdminFileParams = {
+  adminId: number | string;
+  category: string;
+  uploadResult: {
+    fileName: string;
+    storageLocation: string;
+    provider: string;
+    url: string;
+  };
+  mimeType: string;
+  sizeBytes: number;
+};
+export type UploadableFile = {
+  filename: string;
+  mimetype: string;
+  sizeBytes: number;
+  toBuffer: () => Promise<Buffer>;
+};
+
+export type ProcessManualSelectedUserConfigParams = {
+  manualFile?: UploadableFile;
+  adminId: string | number;
+  bannerId: number;
+  fileRepo: Repository<File>;
+  adminFileRepo: Repository<AdminFile>;
+  userRepo: Repository<User>;
+  bannerUserTargetRepo: Repository<BannerUserTarget>;
+};

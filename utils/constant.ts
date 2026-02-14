@@ -5,49 +5,48 @@ export const ADMIN_ALLOWED_ROLES = [
 ];
 
 export enum RefreshTokenStatus {
-    ACTIVE = 'ACTIVE',
-    USED = 'USED',
-    REVOKED = 'REVOKED',
-    INACTIVE = 'INACTIVE'
+  ACTIVE = "ACTIVE",
+  USED = "USED",
+  REVOKED = "REVOKED",
+  INACTIVE = "INACTIVE",
 }
-export enum BannerOwner{
-    SHINR='SHINR',
-    VENDOR='VENDOR'
-}
-
-export enum BannerTargetAudience{
-    EVERYONE='EVERYONE',
-    MANUAL='MANUAL',
-    SPECIALRULES='SPECIALRULES'
+export enum BannerOwner {
+  SHINR = "SHINR",
+  VENDOR = "VENDOR",
 }
 
-export const BannerStatus={
-    ACTIVE:{ displayValue: 'Active', value: 'ACTIVE' },
-    DRAFT:{ displayValue: 'Draft', value: 'DRAFT' },
-    EXPIRED:{ displayValue: 'Expired', value: 'EXPIRED' }
+export enum BannerTargetAudience {
+  EVERYONE = "EVERYONE",
+  MANUAL = "MANUAL",
+  SPECIALRULES = "SPECIALRULES",
 }
 
-export  const BannerReviewStatus={
-    APPROVED:{ displayValue: 'Approved', value: 'APPROVED' },
-    REJECTED:{ displayValue: 'Rejected', value: 'REJECTED' },
-    PENDING:{ displayValue: 'Pending', value: 'PENDING' },
-}
-
- 
-export const TargetAudience = {
-    MANUAL: { displayName: "Manual", value: "MANUAL" },
-    EVERYONE: { displayName: "Everyone", value: "EVERYONE" },
-    SPECIAL_RULE: { displayName: "Special Rules", value: "SPECIAL_RULE" }
+export const BannerStatus = {
+  ACTIVE: { displayValue: "Active", value: "ACTIVE" },
+  DRAFT: { displayValue: "Draft", value: "DRAFT" },
+  EXPIRED: { displayValue: "Expired", value: "EXPIRED" },
 };
 
+export const BannerReviewStatus = {
+  APPROVED: { displayValue: "Approved", value: "APPROVED" },
+  REJECTED: { displayValue: "Rejected", value: "REJECTED" },
+  PENDING: { displayValue: "Pending", value: "PENDING" },
+};
 
-export const FILE_PROVIDER={
-    LOCAL:'LOCAL',
-    S3:'S3'
-}
+export const TargetAudience = {
+  MANUAL: { displayName: "Manual", value: "MANUAL" },
+  EVERYONE: { displayName: "Everyone", value: "EVERYONE" },
+  SPECIAL_RULE: { displayName: "Special Rules", value: "SPECIAL_RULE" },
+};
+
+export const FILE_PROVIDER = {
+  LOCAL: "LOCAL",
+  S3: "S3",
+};
 
 export const ADMIN_FILE_CATEGORY = {
   BANNER: "BANNER_IMAGE",
+  BANNER_AUDIENCE: "BANNER_AUDIENCE",
   GENERAL: "GENERAL",
 };
 
@@ -55,49 +54,52 @@ export const BANNER_IMAGE_ALLOWED_MIMETYPE = [
   "image/png",
   "image/jpeg",
   "image/jpg",
-  "image/webp"
+  "image/webp",
 ];
 
-export const BANNER_IMAGE_MAX_SIZE = 5 * 1024 * 1024; 
+export const BANNER_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 
 export const BANNER_IMAGE_DIMENSION = {
-    WIDTH: 272,
-    HEIGHT: 230
+  WIDTH: 272,
+  HEIGHT: 230,
 };
 
 export const BANNER_APPROVAL_ACTIONS = {
-    APPROVE: 'approve',
-    REJECT: 'reject'
+  APPROVE: "approve",
+  REJECT: "reject",
 };
 
-export enum RewardOwner{
-    SHINR='SHINR',
-    VENDOR='VENDOR'
+export enum RewardOwner {
+  SHINR = "SHINR",
+  VENDOR = "VENDOR",
 }
 
-export enum RewardStatus
-{
-   DRAFT="DRAFT",
-   ACTIVE="ACTIVE",
-   EXPIRED="EXPIRED"
+export enum RewardStatus {
+  DRAFT = "DRAFT",
+  ACTIVE = "ACTIVE",
+  EXPIRED = "EXPIRED",
 }
 
-export enum RewardOfferType{
-    PERCENTAGE="PERCENTAGE",
-    AMOUNT="AMOUNT",
-    CASHBACK="CASHBACK"
+export enum RewardOfferType {
+  PERCENTAGE = "PERCENTAGE",
+  AMOUNT = "AMOUNT",
+  CASHBACK = "CASHBACK",
 }
 
-export enum RewardContributor{
-    PLATFORM="PLATFORM",
-    VENDOR="VENDOR",
-    SHARE='SHARE'
+export enum RewardContributor {
+  PLATFORM = "PLATFORM",
+  VENDOR = "VENDOR",
+  SHARE = "SHARE",
 }
 
-export enum RewardMaxUsagePeriod{
-    HOUR="HOUR",
-    DAY="DAY",
-    MONTH="MONTH",
-    OVERALL="OVERALL"
+export enum RewardMaxUsagePeriod {
+  HOUR = "HOUR",
+  DAY = "DAY",
+  MONTH = "MONTH",
+  OVERALL = "OVERALL",
 }
 
+export const allowedManualMimeTypes = [
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+];
