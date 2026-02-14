@@ -11,13 +11,18 @@ import {
   BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY, BANNER_IMAGE_DIMENSION,
   BANNER_APPROVAL_ACTIONS,
   BannerOwner,
-  allowedManualMimeTypes
 } from "../utils/constant";
 import { MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { createBannerValidateSchema, updateBannerValidateSchema } from "./validators";
 import { fileUpload, parseMultipart, getDimension } from "../utils/fileUpload";
 import { getUtcRangeFromTwoIsoDates, getDayBoundariesFromIso } from "../utils/helper";
-import { extractLocationsFromExcelBuffer, extractPhonesFromExcelBuffer, getPhoneVariants, normalizePhone } from "./helper";
+import {
+  getManualLocationConfig,
+  getManualSelectedUserConfig,
+  processManualLocationConfig,
+  processManualSelectedUserConfig,
+  saveFileAndAdminFile
+} from "./helper";
 
 
 
@@ -392,24 +397,17 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const userRepo = fastify.db.getRepository(User);
         const bannerLocationRepo = fastify.db.getRepository(BannersByLocation);
 
-        const newFile = fileRepo.create({
-          fileName: uploadResult.fileName,
-          storageLocation: uploadResult.storageLocation,
-          mimeType: bannerImg.mimetype,
-          sizeBytes: bannerImg.sizeBytes,
-          provider: uploadResult.provider,
-          url: uploadResult.url,
-          isActive: true,
-        });
-        await fileRepo.save(newFile);
-
-        const newAdminFile = adminFileRepo.create({
-          adminId,
-          fileId: newFile.id,
-          category: ADMIN_FILE_CATEGORY.BANNER,
-          isActive: true,
-        });
-        await adminFileRepo.save(newAdminFile);
+        const { adminFile: newAdminFile } = await saveFileAndAdminFile(
+          fileRepo,
+          adminFileRepo,
+          {
+            adminId,
+            category: ADMIN_FILE_CATEGORY.BANNER,
+            uploadResult,
+            mimeType: bannerImg.mimetype,
+            sizeBytes: bannerImg.sizeBytes,
+          }
+        );
 
         const endTimeValue = endTime
           ? new Date(endTime)
@@ -461,186 +459,30 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             await bannerAudienceTypeRepo.save(newBannerAudeince);
           }
 
-          const manualSelectedUserConfig = targetAudiences.find(
-            (item: BannerUserTargetConfig) =>
-              item.category === TargetAudience.MANUAL.value &&
-              item.isFile &&
-              item.value === "SELECTED_CUSTOMER"
-          );
+          const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
 
           if (manualSelectedUserConfig) {
-            const manualFile = files?.selectedCustomer[0];
-            if (!manualFile) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "MANUAL_FILE_REQUIRED",
-                false,
-                `selectedCustomer file is required for manual target audience.`
-              );
-            }
-
-
-            if (!allowedManualMimeTypes.includes(manualFile.mimetype)) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "MANUAL_FILE_INVALID_MIMETYPE",
-                false,
-                "Selected customer file must be an Excel file."
-              );
-            }
-
-            const manualUploadResult = await fileUpload(manualFile, adminId);
-            const manualFileRecord = fileRepo.create({
-              fileName: manualUploadResult.fileName,
-              storageLocation: manualUploadResult.storageLocation,
-              mimeType: manualFile.mimetype,
-              sizeBytes: manualFile.sizeBytes,
-              provider: manualUploadResult.provider,
-              url: manualUploadResult.url,
-              isActive: true,
-            });
-            await fileRepo.save(manualFileRecord);
-
-            const manualAdminFile = adminFileRepo.create({
+            await processManualSelectedUserConfig({
+              manualFile: files?.selectedCustomer?.[0],
               adminId,
-              fileId: manualFileRecord.id,
-              category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
-              isActive: true,
+              bannerId: newBanner.id,
+              fileRepo,
+              adminFileRepo,
+              userRepo,
+              bannerUserTargetRepo,
             });
-            await adminFileRepo.save(manualAdminFile);
-
-            const manualFileBuffer = await manualFile.toBuffer();
-            const phones = await extractPhonesFromExcelBuffer(manualFileBuffer);
-
-            if (!phones.length) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "MANUAL_FILE_INVALID",
-                false,
-                "Selected customer file has no phone numbers."
-              );
-            }
-
-            const allPhoneVariants = Array.from(
-              new Set(phones.flatMap((phone) => getPhoneVariants(phone)))
-            );
-
-            if (!allPhoneVariants.length) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "MANUAL_FILE_INVALID",
-                false,
-                "Selected customer file has no valid phone numbers."
-              );
-            }
-
-            const users = await userRepo.find({
-              where: { mobile: In(allPhoneVariants), isActive: true },
-              select: ["id"],
-            });
-
-            const userIdSet = new Set<number>(users.map((user: User) => user.id));
-
-            if (!userIdSet.size) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "MANUAL_USERS_NOT_FOUND",
-                false,
-                "No active users found for the phone numbers in selected customer file."
-              );
-            }
-
-            const bannerUserTargets = Array.from(userIdSet).map((userId) =>
-              bannerUserTargetRepo.create({
-                bannerId: newBanner.id,
-                userId,
-                isActive: true,
-              })
-            );
-
-            await bannerUserTargetRepo.save(bannerUserTargets);
           }
-          const manualLocationConfig = targetAudiences.find(
-            (item: BannerUserTargetConfig) =>
-              item.category === TargetAudience.MANUAL.value &&
-              item.isFile &&
-              item.value === "LOCATION_BASED"
-          );
 
+          const manualLocationConfig = getManualLocationConfig(targetAudiences);
           if (manualLocationConfig) {
-
-            const locationFile = files?.locationFile?.[0];
-
-            if (!locationFile) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "LOCATION_FILE_REQUIRED",
-                false,
-                "Location file is required for location-based manual targeting."
-              );
-            }
-
-            if (!allowedManualMimeTypes.includes(locationFile.mimetype)) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "LOCATION_FILE_INVALID_MIMETYPE",
-                false,
-                "Location file must be an Excel file."
-              );
-            }
-
-            const locationUploadResult = await fileUpload(locationFile, adminId);
-
-            const locationFileRecord = fileRepo.create({
-              fileName: locationUploadResult.fileName,
-              storageLocation: locationUploadResult.storageLocation,
-              mimeType: locationFile.mimetype,
-              sizeBytes: locationFile.sizeBytes,
-              provider: locationUploadResult.provider,
-              url: locationUploadResult.url,
-              isActive: true,
-            });
-
-            await fileRepo.save(locationFileRecord);
-
-            const locationAdminFile = adminFileRepo.create({
+            await processManualLocationConfig({
+              locationFile: files?.locationFile?.[0],
               adminId,
-              fileId: locationFileRecord.id,
-              category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
-              isActive: true,
+              bannerId: newBanner.id,
+              fileRepo,
+              adminFileRepo,
+              bannerLocationRepo,
             });
-
-            await adminFileRepo.save(locationAdminFile);
-
-            const locationBuffer = await locationFile.toBuffer();
-            const parsedLocations = await extractLocationsFromExcelBuffer(locationBuffer);
-
-            if (!parsedLocations.length) {
-              throw new APIError(
-                "Bad Request",
-                400,
-                "LOCATION_FILE_INVALID",
-                false,
-                "Location file has no valid coordinates."
-              );
-            }
-            const locationEntities = parsedLocations.map((loc) =>
-              bannerLocationRepo.create({
-                bannerId: newBanner.id,
-                latitude: loc.latitude,
-                longitude: loc.longitude,
-                isActive: true,
-              })
-            );
-
-            await bannerLocationRepo.save(locationEntities);
           }
         }
         reply

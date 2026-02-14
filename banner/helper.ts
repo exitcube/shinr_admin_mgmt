@@ -1,5 +1,223 @@
 import { APIError } from "../types/errors";
 import * as XLSX from "xlsx";
+import { In, Repository } from "typeorm";
+import { AdminFile, BannerUserTarget, BannerUserTargetConfig, BannersByLocation, File, User } from "../models";
+import { ADMIN_FILE_CATEGORY, allowedManualMimeTypes, TargetAudience } from "../utils/constant";
+import { fileUpload } from "../utils/fileUpload";
+import { ProcessManualLocationConfigParams, ProcessManualSelectedUserConfigParams, SaveFileAndAdminFileParams } from "./type";
+
+
+export async function saveFileAndAdminFile(fileRepo: Repository<File>,adminFileRepo: Repository<AdminFile>,
+params: SaveFileAndAdminFileParams
+): Promise<{ file: File; adminFile: AdminFile }> {
+  const { adminId, category, uploadResult, mimeType, sizeBytes } = params;
+
+  const file = fileRepo.create({
+    fileName: uploadResult.fileName,
+    storageLocation: uploadResult.storageLocation,
+    mimeType,
+    sizeBytes,
+    provider: uploadResult.provider,
+    url: uploadResult.url,
+    isActive: true,
+  });
+  await fileRepo.save(file);
+
+  const adminFile = adminFileRepo.create({
+    adminId: String(adminId),
+    fileId: file.id,
+    category,
+    isActive: true,
+  });
+  await adminFileRepo.save(adminFile);
+
+  return { file, adminFile };
+}
+
+function findManualTargetAudienceConfig(targetAudiences: BannerUserTargetConfig[],targetValue: string)
+: BannerUserTargetConfig | undefined {
+  return targetAudiences.find(
+    (item: BannerUserTargetConfig) =>
+      item.category === TargetAudience.MANUAL.value &&
+      item.isFile &&
+      item.value === targetValue
+  );
+}
+
+export function getManualSelectedUserConfig(targetAudiences: BannerUserTargetConfig[])
+: BannerUserTargetConfig | undefined {
+  return findManualTargetAudienceConfig(targetAudiences, "SELECTED_CUSTOMER");
+}
+
+export function getManualLocationConfig( targetAudiences: BannerUserTargetConfig[])
+: BannerUserTargetConfig | undefined {
+  return findManualTargetAudienceConfig(targetAudiences, "LOCATION_BASED");
+}
+
+
+
+export async function processManualSelectedUserConfig(params: ProcessManualSelectedUserConfigParams): Promise<void> {
+  const {
+    manualFile,
+    adminId,
+    bannerId,
+    fileRepo,
+    adminFileRepo,
+    userRepo,
+    bannerUserTargetRepo,
+  } = params;
+
+
+  if (!manualFile) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "MANUAL_FILE_REQUIRED",
+      false,
+      "selectedCustomer file is required for manual target audience."
+    );
+  }
+
+  if (!allowedManualMimeTypes.includes(manualFile.mimetype)) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "MANUAL_FILE_INVALID_MIMETYPE",
+      false,
+      "Selected customer file must be an Excel file."
+    );
+  }
+
+  const manualUploadResult = await fileUpload(manualFile, String(adminId));
+  await saveFileAndAdminFile(fileRepo, adminFileRepo, {
+    adminId,
+    category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
+    uploadResult: manualUploadResult,
+    mimeType: manualFile.mimetype,
+    sizeBytes: manualFile.sizeBytes,
+  });
+
+  const manualFileBuffer = await manualFile.toBuffer();
+  const phones = await extractPhonesFromExcelBuffer(manualFileBuffer);
+
+  if (!phones.length) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "MANUAL_FILE_INVALID",
+      false,
+      "Selected customer file has no phone numbers."
+    );
+  }
+
+  const allPhoneVariants = Array.from(
+    new Set(phones.flatMap((phone) => getPhoneVariants(phone)))
+  );
+
+  if (!allPhoneVariants.length) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "MANUAL_FILE_INVALID",
+      false,
+      "Selected customer file has no valid phone numbers."
+    );
+  }
+
+  const users = await userRepo.find({
+    where: { mobile: In(allPhoneVariants), isActive: true },
+    select: ["id"],
+  });
+
+  const userIdSet = new Set<number>(users.map((user: User) => user.id));
+
+  if (!userIdSet.size) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "MANUAL_USERS_NOT_FOUND",
+      false,
+      "No active users found for the phone numbers in selected customer file."
+    );
+  }
+
+  const bannerUserTargets = Array.from(userIdSet).map((userId) =>
+    bannerUserTargetRepo.create({
+      bannerId,
+      userId,
+      isActive: true,
+    })
+  );
+
+  await bannerUserTargetRepo.save(bannerUserTargets);
+}
+
+
+export async function processManualLocationConfig(params: ProcessManualLocationConfigParams): Promise<void> {
+  const {
+    locationFile,
+    adminId,
+    bannerId,
+    fileRepo,
+    adminFileRepo,
+    bannerLocationRepo,
+  } = params;
+
+  
+
+  if (!locationFile) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "LOCATION_FILE_REQUIRED",
+      false,
+      "Location file is required for location-based manual targeting."
+    );
+  }
+
+  if (!allowedManualMimeTypes.includes(locationFile.mimetype)) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "LOCATION_FILE_INVALID_MIMETYPE",
+      false,
+      "Location file must be an Excel file."
+    );
+  }
+
+  const locationUploadResult = await fileUpload(locationFile, String(adminId));
+  await saveFileAndAdminFile(fileRepo, adminFileRepo, {
+    adminId,
+    category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
+    uploadResult: locationUploadResult,
+    mimeType: locationFile.mimetype,
+    sizeBytes: locationFile.sizeBytes,
+  });
+
+  const locationBuffer = await locationFile.toBuffer();
+  const parsedLocations = await extractLocationsFromExcelBuffer(locationBuffer);
+
+  if (!parsedLocations.length) {
+    throw new APIError(
+      "Bad Request",
+      400,
+      "LOCATION_FILE_INVALID",
+      false,
+      "Location file has no valid coordinates."
+    );
+  }
+
+  const locationEntities = parsedLocations.map((loc) =>
+    bannerLocationRepo.create({
+      bannerId,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      isActive: true,
+    })
+  );
+
+  await bannerLocationRepo.save(locationEntities);
+}
 
 export function normalizePhone(input: string): string {
   return (input || "").replace(/\D/g, "");
