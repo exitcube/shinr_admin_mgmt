@@ -685,24 +685,17 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
           const uploadResult = await fileUpload(bannerImg, adminId);
 
-          const newFile = fileRepo.create({
-            fileName: uploadResult.fileName,
-            storageLocation: uploadResult.storageLocation,
+        const { adminFile: newAdminFile } = await saveFileAndAdminFile(
+          fileRepo,
+          adminFileRepo,
+          {
+            adminId,
+            category: ADMIN_FILE_CATEGORY.BANNER,
+            uploadResult,
             mimeType: bannerImg.mimetype,
             sizeBytes: bannerImg.sizeBytes,
-            provider: uploadResult.provider,
-            url: uploadResult.url,
-            isActive: true,
-          });
-          await fileRepo.save(newFile);
-
-          const newAdminFile = adminFileRepo.create({
-            adminId,
-            fileId: newFile.id,
-            category: ADMIN_FILE_CATEGORY.BANNER,
-            isActive: true,
-          });
-          await adminFileRepo.save(newAdminFile);
+          }
+        );
 
           banner.bgImageId = newAdminFile.id;
         }
@@ -764,38 +757,43 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             { bannerId: banner.id },
             { isActive: false }
           );
-          for (const targetAudience of targetAudiences) {
-            const newBannerAudeince = bannerAudienceTypeRepo.create({
+          const newMappings = targetAudiences.map((targetAudience:BannerUserTargetConfig) =>
+            bannerAudienceTypeRepo.create({
               bannerId: banner.id,
               bannerConfigId: targetAudience.id,
               isActive: true,
+            })
+          );
+
+          await bannerAudienceTypeRepo.save(newMappings);
+
+          const manualSelectedUserConfig =
+            getManualSelectedUserConfig(targetAudiences);
+
+          if (manualSelectedUserConfig) {
+            await processManualSelectedUserConfig({
+              manualFile: files?.selectedCustomer?.[0],
+              adminId,
+              bannerId: banner.id,
+              fileRepo,
+              adminFileRepo,
+              userRepo,
+              bannerUserTargetRepo,
             });
-            await bannerAudienceTypeRepo.save(newBannerAudeince);
-            const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
+          }
 
-              if (manualSelectedUserConfig) {
-                await processManualSelectedUserConfig({
-                  manualFile: files?.selectedCustomer?.[0],
-                  adminId,
-                  bannerId: banner.id,
-                  fileRepo,
-                  adminFileRepo,
-                  userRepo,
-                  bannerUserTargetRepo,
-                });
-              }
-              const manualLocationConfig = getManualLocationConfig(targetAudiences);
+          const manualLocationConfig =
+            getManualLocationConfig(targetAudiences);
 
-              if (manualLocationConfig) {
-                await processManualLocationConfig({
-                  locationFile: files?.locationFile?.[0],
-                  adminId,
-                  bannerId: banner.id,
-                  fileRepo,
-                  adminFileRepo,
-                  bannerLocationRepo,
-                });
-              }
+          if (manualLocationConfig) {
+            await processManualLocationConfig({
+              locationFile: files?.locationFile?.[0],
+              adminId,
+              bannerId: banner.id,
+              fileRepo,
+              adminFileRepo,
+              bannerLocationRepo,
+            });
           }
         }
 
