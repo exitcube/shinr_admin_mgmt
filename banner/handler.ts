@@ -608,6 +608,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const bannerAudienceTypeRepo =
           fastify.db.getRepository(BannerAudienceType);
         const bannerUserTargetRepo = fastify.db.getRepository(BannerUserTarget);
+        const bannerLocationRepo = fastify.db.getRepository(BannersByLocation);
+        const userRepo = fastify.db.getRepository(User);
 
         const banner = await bannerRepo.findOne({
           where: { id: bannerId, isActive: true },
@@ -734,6 +736,22 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         await bannerRepo.save(banner);
 
         if (targetAudienceId && Array.isArray(targetAudienceId)) {
+        const targetAudienceIds = targetAudienceId.map((id: string) =>
+            Number(id)
+          );
+          const targetAudiences = await bannerUserTargetConfigRepo.find({
+            where: { id: In(targetAudienceIds), isActive: true },
+          });
+
+          if (targetAudiences.length !== targetAudienceIds.length) {
+            throw new APIError(
+              "Target audience not found",
+              400,
+              "TARGET_AUDIENCE_INVALID",
+              false,
+              "The given targetAudience is not found"
+            );
+          }
           await bannerAudienceTypeRepo.update(
             { bannerId: banner.id },
             { isActive: false }
@@ -742,26 +760,42 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             { bannerId: banner.id },
             { isActive: false }
           );
-          for (const id of targetAudienceId) {
-            const targetAudience = await bannerUserTargetConfigRepo.findOne({
-              where: { id: id, isActive: true },
-            });
-            if (!targetAudience) {
-              throw new APIError(
-                "Target audience not found",
-                400,
-                "TARGET_AUDIENCE_INVALID",
-                false,
-                "the given targetAudience is  is not found"
-              );
-            }
+          await bannerLocationRepo.update(
+            { bannerId: banner.id },
+            { isActive: false }
+          );
+          for (const targetAudience of targetAudiences) {
             const newBannerAudeince = bannerAudienceTypeRepo.create({
               bannerId: banner.id,
-              bannerConfigId: id,
+              bannerConfigId: targetAudience.id,
               isActive: true,
             });
             await bannerAudienceTypeRepo.save(newBannerAudeince);
+            const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
 
+              if (manualSelectedUserConfig) {
+                await processManualSelectedUserConfig({
+                  manualFile: files?.selectedCustomer?.[0],
+                  adminId,
+                  bannerId: banner.id,
+                  fileRepo,
+                  adminFileRepo,
+                  userRepo,
+                  bannerUserTargetRepo,
+                });
+              }
+              const manualLocationConfig = getManualLocationConfig(targetAudiences);
+
+              if (manualLocationConfig) {
+                await processManualLocationConfig({
+                  locationFile: files?.locationFile?.[0],
+                  adminId,
+                  bannerId: banner.id,
+                  fileRepo,
+                  adminFileRepo,
+                  bannerLocationRepo,
+                });
+              }
           }
         }
 
