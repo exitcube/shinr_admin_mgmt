@@ -1,25 +1,31 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
-import {  UpdateBannerCategoryBody, ListBannerBody,BannerApprovalBody,ListBannerBodySearch } from "./type";
-import { Banner, Vendor, BannerCategory,BannerUserTargetConfig ,File,AdminFile,BannerAudienceType,BannerUserTarget} from "../models";
+import { UpdateBannerCategoryBody, ListBannerBody, BannerApprovalBody, ListBannerBodySearch } from "./type";
+import { Banner, Vendor, BannerCategory, BannerUserTargetConfig, File, AdminFile, BannerAudienceType, BannerUserTarget, User, BannersByLocation } from "../models";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
-import { ILike,In } from "typeorm";
+import { ILike, In } from "typeorm";
 import {
   BannerReviewStatus,
   BannerStatus,
-  TargetAudience,FILE_PROVIDER,
-  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY,  BANNER_IMAGE_DIMENSION,
+  TargetAudience, FILE_PROVIDER,
+  BANNER_IMAGE_ALLOWED_MIMETYPE, BANNER_IMAGE_MAX_SIZE, ADMIN_FILE_CATEGORY, BANNER_IMAGE_DIMENSION,
   BANNER_APPROVAL_ACTIONS,
-  BannerOwner
+  BannerOwner,
 } from "../utils/constant";
 import { MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
-import { createBannerValidateSchema,updateBannerValidateSchema } from "./validators";
-import { fileUpload,parseMultipart ,getDimension} from "../utils/fileUpload";
-import sharp from "sharp";
-import { EntityManager } from "typeorm";
-import { getUtcRangeFromTwoIsoDates,getDayBoundariesFromIso } from "../utils/helper";
+import { createBannerValidateSchema, updateBannerValidateSchema } from "./validators";
+import { fileUpload, parseMultipart, getDimension } from "../utils/fileUpload";
+import { getUtcRangeFromTwoIsoDates, getDayBoundariesFromIso } from "../utils/helper";
+import {
+  getManualLocationConfig,
+  getManualSelectedUserConfig,
+  processManualLocationConfig,
+  processManualSelectedUserConfig,
+  saveFileAndAdminFile
+} from "./helper";
 
- 
+
+
 
 export default function controller(fastify: FastifyInstance, opts: FastifyPluginOptions): any {
   return {
@@ -130,7 +136,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "Banner Category_Updating_FAILED",
           true,
           (error as APIError).publicMessage ||
-            "Failed to update Banner Category"
+          "Failed to update Banner Category"
         );
       }
     },
@@ -163,7 +169,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           (error as APIError).code || "Banner Category_Deleting_FAILED",
           true,
           (error as APIError).publicMessage ||
-            "Failed to deleted Banner Category"
+          "Failed to deleted Banner Category"
         );
       }
     },
@@ -310,10 +316,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    createBannerHandler: async (
-      request: FastifyRequest,
-      reply: FastifyReply
-    ): Promise<void> => {
+    createBannerHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const adminId = (request as any).user?.userId;
         const { body, files } = await parseMultipart(request);
@@ -389,32 +392,27 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const bannerUserTargetConfigRepo = fastify.db.getRepository(
           BannerUserTargetConfig
         );
-        const bannerAudienceTypeRepo =
-          fastify.db.getRepository(BannerAudienceType);
+        const bannerAudienceTypeRepo = fastify.db.getRepository(BannerAudienceType);
+        const bannerUserTargetRepo = fastify.db.getRepository(BannerUserTarget);
+        const userRepo = fastify.db.getRepository(User);
+        const bannerLocationRepo = fastify.db.getRepository(BannersByLocation);
 
-        const newFile = fileRepo.create({
-          fileName: uploadResult.fileName,
-          storageLocation: uploadResult.storageLocation,
-          mimeType: bannerImg.mimetype,
-          sizeBytes: bannerImg.sizeBytes,
-          provider: uploadResult.provider,
-          url: uploadResult.url,
-          isActive: true,
-        });
-        await fileRepo.save(newFile);
-
-        const newAdminFile = adminFileRepo.create({
-          adminId,
-          fileId: newFile.id,
-          category: ADMIN_FILE_CATEGORY.BANNER,
-          isActive: true,
-        });
-        await adminFileRepo.save(newAdminFile);
+        const { adminFile: newAdminFile } = await saveFileAndAdminFile(
+          fileRepo,
+          adminFileRepo,
+          {
+            adminId,
+            category: ADMIN_FILE_CATEGORY.BANNER,
+            uploadResult,
+            mimeType: bannerImg.mimetype,
+            sizeBytes: bannerImg.sizeBytes,
+          }
+        );
 
         const endTimeValue = endTime
           ? new Date(endTime)
           : new Date("2099-01-01");
-        const startTimeValue = new Date(startTime as string) 
+        const startTimeValue = new Date(startTime as string)
 
         const newBanner = bannerRepo.create({
           bgImageId: newAdminFile.id,
@@ -422,7 +420,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           categoryId,
           owner,
           vendorId,
-          homePageView:Boolean(homePageView),
+          homePageView: Boolean(homePageView),
           displaySequence: priority,
           targetValue,
           startTime: startTimeValue,
@@ -435,27 +433,56 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         await bannerRepo.save(newBanner);
 
         if (targetAudienceId && Array.isArray(targetAudienceId)) {
-          for (const id of targetAudienceId) {
-            const targetAudience = await bannerUserTargetConfigRepo.findOne({
-              where: { id: id, isActive: true },
-            });
-            if(!targetAudience)
-            {
-               throw new APIError(
-            "Target audience not found",
-            400,
-            "TARGET_AUDIENCE_INVALID",
-            false,
-            "the given targetAudience is  is not found"
+          const targetAudienceIds = targetAudienceId.map((id: string) =>
+            Number(id)
           );
-            }
-              const newBannerAudeince = bannerAudienceTypeRepo.create({
-                bannerId: newBanner.id,
-                bannerConfigId: id,
-                isActive: true,
-              });
-              await bannerAudienceTypeRepo.save(newBannerAudeince);
-            
+          const targetAudiences = await bannerUserTargetConfigRepo.find({
+            where: { id: In(targetAudienceIds), isActive: true },
+          });
+
+          if (targetAudiences.length !== targetAudienceIds.length) {
+            throw new APIError(
+              "Target audience not found",
+              400,
+              "TARGET_AUDIENCE_INVALID",
+              false,
+              "One or more given target audiences are not available"
+            );
+          }
+
+          for (const targetAudience of targetAudiences) {
+            const newBannerAudeince = bannerAudienceTypeRepo.create({
+              bannerId: newBanner.id,
+              bannerConfigId: targetAudience.id,
+              isActive: true,
+            });
+            await bannerAudienceTypeRepo.save(newBannerAudeince);
+          }
+
+          const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
+
+          if (manualSelectedUserConfig) {
+            await processManualSelectedUserConfig({
+              manualFile: files?.selectedCustomer?.[0],
+              adminId,
+              bannerId: newBanner.id,
+              fileRepo,
+              adminFileRepo,
+              userRepo,
+              bannerUserTargetRepo,
+            });
+          }
+
+          const manualLocationConfig = getManualLocationConfig(targetAudiences);
+          if (manualLocationConfig) {
+            await processManualLocationConfig({
+              locationFile: files?.locationFile?.[0],
+              adminId,
+              bannerId: newBanner.id,
+              fileRepo,
+              adminFileRepo,
+              bannerLocationRepo,
+            });
           }
         }
         reply
@@ -719,23 +746,22 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
             const targetAudience = await bannerUserTargetConfigRepo.findOne({
               where: { id: id, isActive: true },
             });
-            if(!targetAudience)
-            {
-               throw new APIError(
-            "Target audience not found",
-            400,
-            "TARGET_AUDIENCE_INVALID",
-            false,
-            "the given targetAudience is  is not found"
-          );
+            if (!targetAudience) {
+              throw new APIError(
+                "Target audience not found",
+                400,
+                "TARGET_AUDIENCE_INVALID",
+                false,
+                "the given targetAudience is  is not found"
+              );
             }
-              const newBannerAudeince = bannerAudienceTypeRepo.create({
-                bannerId: banner.id,
-                bannerConfigId: id,
-                isActive: true,
-              });
-              await bannerAudienceTypeRepo.save(newBannerAudeince);
-            
+            const newBannerAudeince = bannerAudienceTypeRepo.create({
+              bannerId: banner.id,
+              bannerConfigId: id,
+              isActive: true,
+            });
+            await bannerAudienceTypeRepo.save(newBannerAudeince);
+
           }
         }
 
@@ -757,10 +783,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    singleBannerHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
+    singleBannerHandler: async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
         const bannerId = (request.params as any).id;
-    
+
 
         const bannerRepo = fastify.db.getRepository(Banner);
 

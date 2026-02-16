@@ -25,6 +25,7 @@ import { RewardContribution } from './RewardContribution';
 import { RewardAudienceType } from './RewardAudienceType';
 import { RewardServiceType } from './RewardServiceType';
 import { RewardUserTargetConfig} from './RewardUserTargetConfig';
+import { BannersByLocation } from './BannersByLocation';
 // import { Product } from './Product';
 
 // Export all entities as an array for TypeORM configuration
@@ -55,7 +56,8 @@ export const entities = [
     RewardContribution,
     RewardAudienceType,
     RewardServiceType,
-    RewardUsage
+    RewardUsage,
+    BannersByLocation,
     // Product,
 ];
 
@@ -88,5 +90,7 @@ export {RewardServiceType, type RewardServiceType as RewardServiceTypeType} from
 export {RewardUsage, type RewardUsage as RewardUsageType} from './RewardUsage';
 
  export { RewardUserTargetConfig, type RewardUserTargetConfig as RewardUserTargetConfigType } from './RewardUserTargetConfig';
+export { BannersByLocation, type BannersByLocation as BannersByLocationType } from './BannersByLocation';
+
 
 
