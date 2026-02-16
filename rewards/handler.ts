@@ -1,12 +1,15 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import { ILike, LessThanOrEqual, MoreThanOrEqual } from "typeorm";
-import { Reward,RewardCategory,RewardAudienceType,RewardContribution,RewardServiceType,RewardUserTargetConfig,RewardUserTarget,Service, RewardOfferType ,ServiceType} from "../models/index";
+import { Reward,RewardCategory,RewardAudienceType,RewardContribution,RewardServiceType,RewardUserTargetConfig,RewardUserTarget,Service, RewardOfferType ,ServiceType, File, AdminFile, User, RewardsByLocation} from "../models/index";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
-import { CreateRewardBody,UpdateRewardBody,ListRewardBody,ListRewardBodySearch } from "./type";
+import { ListRewardBody,ListRewardBodySearch } from "./type";
 import { TargetAudience,RewardOwner } from '../utils/constant';
 import { In } from "typeorm";
 import { getDayBoundariesFromIso, getUtcRangeFromTwoIsoDates } from "../utils/helper";
+import { parseMultipart } from "../utils/fileUpload";
+import { createRewardValidate, updateRewardValidate } from "./validators";
+import { getManualLocationConfig, getManualSelectedUserConfig, processManualLocationConfig, processManualSelectedUserConfig } from "./helper";
 
 
 
@@ -151,15 +154,45 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         );
       }
     },
-    createRewardHandler: async (request: FastifyRequest<{Body:CreateRewardBody}>,reply: FastifyReply): Promise<void> => {
+    createRewardHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
       try {
-        const { owner, vendorId,title, sideText, summary, description,
-          rewardCategoryId, serviceCategoryIds, displayCouponPage, displayVendorPage, offerType, percentage,
-          maxDiscountAmount, minOrderValue, codeGeneration, priority, targetAudienceIds, startDate, endDate,
-          totalGrabLimit, contribution, shinrPercentage, vendorPercentage, maxUsage, maxUsagePeriod,
-          maxUsagePeriodValue, status } = request.body as CreateRewardBody;
-
         const adminId = (request as any).user?.userId;
+        const { body, files } = await parseMultipart(request);
+        const { error, value } = createRewardValidate.body.validate(body);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        const {
+          owner,
+          vendorId,
+          title,
+          sideText,
+          summary,
+          description,
+          rewardCategoryId,
+          serviceCategoryIds,
+          displayCouponPage,
+          displayVendorPage,
+          offerType,
+          percentage,
+          maxDiscountAmount,
+          minOrderValue,
+          codeGeneration,
+          priority,
+          targetAudienceIds,
+          startDate,
+          endDate,
+          totalGrabLimit,
+          contribution,
+          shinrPercentage,
+          vendorPercentage,
+          maxUsage,
+          maxUsagePeriod,
+          maxUsagePeriodValue,
+          status,
+        } = value;
+
         const rewardRepo = fastify.db.getRepository(Reward);
         const serviceRepo = fastify.db.getRepository(Service);
         const rewardServiceTypeRepo = fastify.db.getRepository(RewardServiceType);
@@ -167,6 +200,11 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const rewardContributorRepo = fastify.db.getRepository(RewardContribution);
         const rewardAudienceTypeRepo = fastify.db.getRepository(RewardAudienceType);
         const rewardUserTargetConfigRepo = fastify.db.getRepository(RewardUserTargetConfig);
+        const rewardUserTargetRepo = fastify.db.getRepository(RewardUserTarget);
+        const rewardsByLocationRepo = fastify.db.getRepository(RewardsByLocation);
+        const fileRepo = fastify.db.getRepository(File);
+        const adminFileRepo = fastify.db.getRepository(AdminFile);
+        const userRepo = fastify.db.getRepository(User);
          
           
 
@@ -220,15 +258,18 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
          
 
         if (serviceCategoryIds && Array.isArray(serviceCategoryIds)) {
+          const serviceIds = serviceCategoryIds.map((id: string | number) =>
+            Number(id)
+          );
 
           const services:Service[] = await serviceRepo.find({
             where: {
-              id: In(serviceCategoryIds),
+              id: In(serviceIds),
               isActive: true,
             },
           });
 
-          if (services.length !== serviceCategoryIds.length) {
+          if (services.length !== serviceIds.length) {
             throw new APIError(
               "service not found",
               400,
@@ -250,14 +291,18 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
 
         if (targetAudienceIds && Array.isArray(targetAudienceIds)) {
+          const rewardTargetAudienceIds = targetAudienceIds.map(
+            (id: string | number) => Number(id)
+          );
+
           const targetAudiences:RewardUserTargetConfig[] = await rewardUserTargetConfigRepo.find({
             where: {
-              id: In(targetAudienceIds),
+              id: In(rewardTargetAudienceIds),
               isActive: true,
             },
           });
 
-          if (targetAudiences.length !== targetAudienceIds.length) {
+          if (targetAudiences.length !== rewardTargetAudienceIds.length) {
             throw new APIError(
               "Target audience not found",
               400,
@@ -276,6 +321,31 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           );
 
           await rewardAudienceTypeRepo.save(rewardAudienceTypes);
+
+          const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
+          if (manualSelectedUserConfig) {
+            await processManualSelectedUserConfig({
+              manualFile: files?.selectedCustomer?.[0],
+              adminId,
+              rewardId: newReward.id,
+              fileRepo,
+              adminFileRepo,
+              userRepo,
+              rewardUserTargetRepo,
+            });
+          }
+
+          const manualLocationConfig = getManualLocationConfig(targetAudiences);
+          if (manualLocationConfig) {
+            await processManualLocationConfig({
+              locationFile: files?.locationFile?.[0],
+              adminId,
+              rewardId: newReward.id,
+              fileRepo,
+              adminFileRepo,
+              rewardsByLocationRepo,
+            });
+          }
         }
 
         reply
@@ -293,15 +363,21 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
       }
     },
-    updateRewardHandler: async (request: FastifyRequest<{Body:UpdateRewardBody}>,reply: FastifyReply): Promise<void> => {
+    updateRewardHandler: async (request: FastifyRequest,reply: FastifyReply): Promise<void> => {
       try {
+        const adminId = (request as any).user?.userId;
+        const { body, files } = await parseMultipart(request);
+        const { error, value } = updateRewardValidate.body.validate(body);
+        if (error) {
+          throw new Error(error.message);
+        }
+
         const { rewardId, owner, vendorId, title, sideText, summary, description,
           rewardCategoryId, serviceCategoryIds, displayCouponPage, displayVendorPage, offerType, percentage,
           maxDiscountAmount, minOrderValue, codeGeneration, priority, targetAudienceIds, startDate, endDate,
           totalGrabLimit, contribution, shinrPercentage, vendorPercentage, maxUsage, maxUsagePeriod,
-          maxUsagePeriodValue, status } = request.body as UpdateRewardBody;
+          maxUsagePeriodValue, status } = value;
 
-        const adminId = (request as any).user?.userId;
         const rewardRepo = fastify.db.getRepository(Reward);
         const serviceRepo = fastify.db.getRepository(Service);
         const rewardServiceTypeRepo = fastify.db.getRepository(RewardServiceType);
@@ -309,6 +385,11 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const rewardContributorRepo = fastify.db.getRepository(RewardContribution);
         const rewardAudienceTypeRepo = fastify.db.getRepository(RewardAudienceType);
         const rewardUserTargetConfigRepo = fastify.db.getRepository(RewardUserTargetConfig);
+        const rewardUserTargetRepo = fastify.db.getRepository(RewardUserTarget);
+        const rewardsByLocationRepo = fastify.db.getRepository(RewardsByLocation);
+        const fileRepo = fastify.db.getRepository(File);
+        const adminFileRepo = fastify.db.getRepository(AdminFile);
+        const userRepo = fastify.db.getRepository(User);
 
         const existingReward = await rewardRepo.findOne({ where: { id: rewardId, isActive: true } });
         if (!existingReward) {
@@ -368,14 +449,17 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         if (serviceCategoryIds && Array.isArray(serviceCategoryIds)) {
           const existingRewardServiceTypes = await rewardServiceTypeRepo.update({ rewardId: rewardId }, { isActive: false });
+          const serviceIds = serviceCategoryIds.map((id: string | number) =>
+            Number(id)
+          );
           const services: Service[] = await serviceRepo.find({
             where: {
-              id: In(serviceCategoryIds),
+              id: In(serviceIds),
               isActive: true,
             },
           });
 
-          if (services.length !== serviceCategoryIds.length) {
+          if (services.length !== serviceIds.length) {
             throw new APIError(
               "service not found",
               400,
@@ -399,14 +483,21 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
         if (targetAudienceIds && Array.isArray(targetAudienceIds)) {
           const existingRewardAudienceTypes = await rewardAudienceTypeRepo.update({ rewardId: rewardId }, { isActive: false });
+          await rewardUserTargetRepo.update({ rewardId }, { isActive: false });
+          await rewardsByLocationRepo.update({ rewardId }, { isActive: false });
+
+          const rewardTargetAudienceIds = targetAudienceIds.map(
+            (id: string | number) => Number(id)
+          );
+
           const targetAudiences: RewardUserTargetConfig[] = await rewardUserTargetConfigRepo.find({
             where: {
-              id: In(targetAudienceIds),
+              id: In(rewardTargetAudienceIds),
               isActive: true,
             },
           });
 
-          if (targetAudiences.length !== targetAudienceIds.length) {
+          if (targetAudiences.length !== rewardTargetAudienceIds.length) {
             throw new APIError(
               "Target audience not found",
               400,
@@ -425,6 +516,31 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           );
 
           await rewardAudienceTypeRepo.save(rewardAudienceTypes);
+
+          const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
+          if (manualSelectedUserConfig) {
+            await processManualSelectedUserConfig({
+              manualFile: files?.selectedCustomer?.[0],
+              adminId,
+              rewardId,
+              fileRepo,
+              adminFileRepo,
+              userRepo,
+              rewardUserTargetRepo,
+            });
+          }
+
+          const manualLocationConfig = getManualLocationConfig(targetAudiences);
+          if (manualLocationConfig) {
+            await processManualLocationConfig({
+              locationFile: files?.locationFile?.[0],
+              adminId,
+              rewardId,
+              fileRepo,
+              adminFileRepo,
+              rewardsByLocationRepo,
+            });
+          }
 
         }
           

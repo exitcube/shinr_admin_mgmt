@@ -170,7 +170,6 @@ export const updateRewardValidate = {
             "number.base": "Reward ID must be a number",
         }),
         owner: Joi.string().valid(RewardOwner.SHINR, RewardOwner.VENDOR).optional().messages({
-            "any.required": "Owner is required",
             "string.base": "Owner must be a string",
         }),
 
@@ -181,27 +180,20 @@ export const updateRewardValidate = {
                     "any.required": "vendorId is required when owner is vendor",
                     "number.base": "vendorId must be a number",
                 }),
-                otherwise: Joi.number().forbidden(),
+                otherwise: Joi.forbidden().messages({
+                    "any.unknown": "vendorId is only allowed when owner is VENDOR",
+                }),
             }),
 
-        title: Joi.string().optional().messages({
-            "any.required": "Title is required",
-        }),
+        title: Joi.string().optional(),
 
-        sideText: Joi.string().optional().messages({
-            "any.required": "Side Text is required",
-        }),
+        sideText: Joi.string().optional(),
 
-        summary: Joi.string().optional().messages({
-            "any.required": "Summary is required",
-        }),
+        summary: Joi.string().optional(),
 
-        description: Joi.string().optional().messages({
-            "any.required": "Description is required",
-        }),
+        description: Joi.string().optional(),
 
         rewardCategoryId: Joi.number().optional().messages({
-            "any.required": "Reward Category ID is required",
             "number.base": "Reward Category ID must be a number",
         }),
 
@@ -209,50 +201,52 @@ export const updateRewardValidate = {
             .items(Joi.number())
             .optional()
             .messages({
-                "any.required": "Service Category IDs are required",
                 "array.base": "Service Category IDs must be an array",
             }),
 
         displayCouponPage: Joi.boolean().optional().messages({
-            "any.required": "Display Coupon Page is required",
             "boolean.base": "Display Coupon Page must be a boolean",
         }),
 
         displayVendorPage: Joi.boolean().optional().messages({
-            "any.required": "Display Vendor Page is required",
             "boolean.base": "Display Vendor Page must be a boolean",
         }),
 
         offerType: Joi.string().valid(RewardOfferType.AMOUNT, RewardOfferType.CASHBACK, RewardOfferType.PERCENTAGE).optional().messages({
-            "any.required": "Offer Type is required",
+            "any.only": "Offer Type is invalid",
         }),
 
-        percentage: Joi.number()
-            .when("offerType", {
-                is: Joi.valid(RewardOfferType.CASHBACK, RewardOfferType.PERCENTAGE),
-                then: Joi.number().required().messages({
-                    "any.required": "Percentage is required when offerType is Cashback or Percentage",
-                    "number.base": "Percentage must be a number",
-                }),
-                otherwise: Joi.forbidden(),
+        percentage: Joi.when("offerType", {
+            switch: [
+                {
+                    is: RewardOfferType.AMOUNT,
+                    then: Joi.forbidden().messages({
+                        "any.unknown": "Percentage is not allowed when offerType is AMOUNT",
+                    }),
+                },
+                {
+                    is: Joi.valid(RewardOfferType.CASHBACK, RewardOfferType.PERCENTAGE),
+                    then: Joi.number().empty("").optional().messages({
+                        "number.base": "Percentage must be a number",
+                    }),
+                },
+            ],
+            otherwise: Joi.number().empty("").optional().messages({
+                "number.base": "Percentage must be a number",
             }),
+        }),
 
         maxDiscountAmount: Joi.number().optional().messages({
-            "any.required": "Max Discount Amount is required",
             "number.base": "Max Discount Amount must be a number",
         }),
 
         minOrderValue: Joi.number().optional().messages({
-            "any.required": "Min Order Value is required",
             "number.base": "Min Order Value must be a number",
         }),
 
-        codeGeneration: Joi.string().optional().messages({
-            "any.required": "Code Generation is required",
-        }),
+        codeGeneration: Joi.string().optional(),
 
         priority: Joi.number().optional().messages({
-            "any.required": "Priority is required",
             "number.base": "Priority must be a number",
         }),
 
@@ -260,27 +254,29 @@ export const updateRewardValidate = {
             .items(Joi.number())
             .optional()
             .messages({
-                "any.required": "Target Audience IDs are required",
                 "array.base": "Target Audience IDs must be an array",
             }),
 
         startDate: Joi.date().iso().optional().messages({
-            "any.required": "Start Date is required",
             "date.base": "Start Date must be a valid date",
         }),
 
-        endDate: Joi.date().iso().greater(Joi.ref("startDate")).optional().messages({
-            "any.required": "End Date is required",
-            "date.base": "End Date must be a valid date",
-            "date.greater": "End Date must be greater than Start Date",
+        endDate: Joi.when("startDate", {
+            is: Joi.exist(),
+            then: Joi.date().iso().greater(Joi.ref("startDate")).messages({
+                "date.base": "End Date must be a valid date",
+                "date.greater": "End Date must be greater than Start Date",
+            }),
+            otherwise: Joi.date().iso().messages({
+                "date.base": "End Date must be a valid date",
+            }),
         }),
         totalGrabLimit: Joi.number().optional().messages({
-            "any.required": "Total Grab Limit is required",
             "number.base": "Total Grab Limit must be a number",
         }),
 
         contribution: Joi.string().valid(RewardContributor.PLATFORM, RewardContributor.SHARE, RewardContributor.VENDOR).optional().messages({
-            "any.required": "Contribution is required",
+            "any.only": "Contribution is invalid",
         }),
 
         shinrPercentage: Joi.number()
@@ -290,7 +286,9 @@ export const updateRewardValidate = {
                     "any.required": "SHINR Percentage is required when contribution is SHARE",
                     "number.base": "SHINR Percentage must be a number",
                 }),
-                otherwise: Joi.forbidden(),
+                otherwise: Joi.forbidden().messages({
+                    "any.unknown": "SHINR Percentage is only allowed when contribution is SHARE",
+                }),
             }),
 
         vendorPercentage: Joi.number()
@@ -300,31 +298,48 @@ export const updateRewardValidate = {
                     "any.required": "Vendor Percentage is required when contribution is SHARE",
                     "number.base": "Vendor Percentage must be a number",
                 }),
-                otherwise: Joi.forbidden(),
+                otherwise: Joi.forbidden().messages({
+                    "any.unknown": "Vendor Percentage is only allowed when contribution is SHARE",
+                }),
             }),
 
         maxUsage: Joi.number().optional().messages({
-            "any.required": "Max Usage is required",
             "number.base": "Max Usage must be a number",
         }),
 
         maxUsagePeriod: Joi.string().valid(RewardMaxUsagePeriod.DAY, RewardMaxUsagePeriod.HOUR, RewardMaxUsagePeriod.MONTH, RewardMaxUsagePeriod.OVERALL).optional().messages({
-            "any.required": "Max Usage Period is required",
+            "any.only": "Max Usage Period is invalid",
         }),
 
-        maxUsagePeriodValue: Joi.number()
-            .when("maxUsagePeriod", {
-                is: RewardMaxUsagePeriod.OVERALL,
-                then: Joi.forbidden(),
-                otherwise: Joi.number().required().messages({
-                    "any.required": "Max Usage Period Value is required when maxUsagePeriod is not OVERALL",
-                    "number.base": "Max Usage Period Value must be a number",
-                })
+        maxUsagePeriodValue: Joi.when("maxUsagePeriod", {
+            switch: [
+                {
+                    is: RewardMaxUsagePeriod.OVERALL,
+                    then: Joi.forbidden().messages({
+                        "any.unknown": "Max Usage Period Value is not allowed when maxUsagePeriod is OVERALL",
+                    }),
+                },
+                {
+                    is: Joi.valid(
+                        RewardMaxUsagePeriod.HOUR,
+                        RewardMaxUsagePeriod.DAY,
+                        RewardMaxUsagePeriod.MONTH
+                    ),
+                    then: Joi.number().empty("").optional().messages({
+                        "number.base": "Max Usage Period Value must be a number",
+                    }),
+                },
+            ],
+            otherwise: Joi.number().empty("").optional().messages({
+                "number.base": "Max Usage Period Value must be a number",
             }),
+        }),
 
         status: Joi.string().valid(RewardStatus.DRAFT, RewardStatus.ACTIVE).optional().messages({
-            "any.required": "Status is required",
+            "any.only": "Status is invalid",
         }),
+    }).min(2).messages({
+        "object.min": "At least one field to update is required along with rewardId",
     }),
 };
 export const listRewardValidate = {
