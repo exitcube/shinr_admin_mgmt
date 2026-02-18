@@ -73,3 +73,40 @@ export type ListRewardBody = {
     limit?: number;
     sortOrder?: 'ASC' | 'DESC';
 };
+
+export type ProcessManualLocationConfigParams = {
+  locationFile?: NormalizedFile;
+  adminId: string | number;
+  rewardId: number;
+  fileRepo: Repository<File>;
+  adminFileRepo: Repository<AdminFile>;
+  rewardsByLocationRepo: Repository<RewardsByLocation>;
+};
+
+export type ParsedLocation = {
+  latitude: number;
+  longitude: number;
+};
+
+export type SaveFileAndAdminFileParams = {
+  adminId: number | string;
+  category: string;
+  uploadResult: {
+    fileName: string;
+    storageLocation: string;
+    provider: string;
+    url: string;
+  };
+  mimeType: string;
+  sizeBytes: number;
+};
+
+export type ProcessManualSelectedUserConfigParams = {
+  manualFile?: NormalizedFile;
+  adminId: string | number;
+  rewardId: number;
+  fileRepo: Repository<File>;
+  adminFileRepo: Repository<AdminFile>;
+  userRepo: Repository<User>;
+  rewardUserTargetRepo: Repository<RewardUserTarget>;
+};
