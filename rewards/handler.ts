@@ -9,7 +9,7 @@ import { In } from "typeorm";
 import { getDayBoundariesFromIso, getUtcRangeFromTwoIsoDates } from "../utils/helper";
 import { parseMultipart } from "../utils/fileUpload";
 import { createRewardValidate, updateRewardValidate } from "./validators";
-import { getManualLocationConfig, getManualSelectedUserConfig, processManualLocationConfig, processManualSelectedUserConfig } from "./helper";
+import { deactivateExistingTargetsOfReward, getManualLocationConfig, getManualSelectedUserConfig, processManualLocationConfig, processManualSelectedUserConfig } from "./helper";
 
 
 
@@ -482,10 +482,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         }
 
         if (targetAudienceIds && Array.isArray(targetAudienceIds)) {
-          const existingRewardAudienceTypes = await rewardAudienceTypeRepo.update({ rewardId: rewardId }, { isActive: false });
-          await rewardUserTargetRepo.update({ rewardId }, { isActive: false });
-          await rewardsByLocationRepo.update({ rewardId }, { isActive: false });
-
+      
           const rewardTargetAudienceIds = targetAudienceIds.map(
             (id: string | number) => Number(id)
           );
@@ -506,6 +503,14 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               "One or more given target audiences are not available"
             );
           }
+            await deactivateExistingTargetsOfReward (
+              rewardId,
+              rewardAudienceTypeRepo,
+              rewardUserTargetRepo,
+              rewardsByLocationRepo,
+              rewardUserTargetConfigRepo
+            );
+
 
           const rewardAudienceTypes = targetAudiences.map(targetAudience =>
             rewardAudienceTypeRepo.create({

@@ -4,6 +4,7 @@ import { APIError } from "../types/errors";
 import {
   AdminFile,
   File,
+  RewardAudienceType,
   RewardUserTarget,
   RewardUserTargetConfig,
   RewardsByLocation,
@@ -417,4 +418,41 @@ async function extractLocationsFromExcelBuffer(
   });
 
   return parsedLocations;
+}
+
+export async function deactivateExistingTargetsOfReward(rewardId: number, rewardAudienceTypeRepo: Repository<RewardAudienceType>, rewardUserTargetRepo: Repository<RewardUserTarget>, rewardLocationRepo: Repository<RewardsByLocation>, rewardUserTargetConfigRepo: Repository<RewardUserTargetConfig>) {
+  const existingRewardConfig = await rewardAudienceTypeRepo.find({
+    where: { rewardId, isActive: true },
+    select: ["rewardConfigId"],
+  });
+
+  if (!existingRewardConfig.length) return;
+
+  const configIds = existingRewardConfig.map(m => m.rewardConfigId);
+
+  const configs = await rewardUserTargetConfigRepo.find({
+    where: { id: In(configIds), isActive: true },
+  });
+
+  for (const config of configs) {
+
+    if (config.value === "SELECTED_CUSTOMER") {
+      await rewardUserTargetRepo.update(
+        { rewardId },
+        { isActive: false }
+      );
+    }
+
+    if (config.value === "LOCATION_BASED") {
+      await rewardLocationRepo.update(
+        { rewardId },
+        { isActive: false }
+      );
+    }
+  }
+
+  await rewardAudienceTypeRepo.update(
+    { rewardId },
+    { isActive: false }
+  );
 }
