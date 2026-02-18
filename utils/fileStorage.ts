@@ -191,3 +191,51 @@ export async function getFileStream(
   }
   throw new Error(`Unknown file provider: ${provider}`);
 }
+
+/**
+ * Deletes a stored file from LOCAL or S3 provider.
+ * Safe to call during rollback/cleanup flows.
+ */
+export async function deleteStoredFile(
+  provider: string,
+  storageLocation: string
+): Promise<void> {
+  if (provider === FILE_PROVIDER.LOCAL) {
+    const filePath = getLocalFilePath(storageLocation);
+    try {
+      await fs.promises.unlink(filePath);
+    } catch (error: any) {
+      if (error?.code !== "ENOENT") {
+        throw error;
+      }
+    }
+    return;
+  }
+
+  if (provider === FILE_PROVIDER.S3) {
+    try {
+      const s3 = await import("@aws-sdk/client-s3");
+      const client = new s3.S3Client({
+        region: process.env.AWS_REGION!,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        },
+      });
+      await client.send(
+        new s3.DeleteObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: storageLocation,
+        })
+      );
+    } catch (error: any) {
+      const message = String(error?.message || "");
+      if (!message.includes("@aws-sdk/client-s3")) {
+        throw error;
+      }
+    }
+    return;
+  }
+
+  throw new Error(`Unknown file provider: ${provider}`);
+}

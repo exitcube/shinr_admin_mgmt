@@ -34,6 +34,7 @@ export type ProcessManualLocationConfigParams = {
   fileRepo: Repository<File>;
   adminFileRepo: Repository<AdminFile>;
   bannerLocationRepo: Repository<BannersByLocation>;
+  uploadedFiles?: Array<{ provider: string; storageLocation: string }>;
 };
 
 export type SaveFileAndAdminFileParams = {
@@ -63,4 +64,5 @@ export type ProcessManualSelectedUserConfigParams = {
   adminFileRepo: Repository<AdminFile>;
   userRepo: Repository<User>;
   bannerUserTargetRepo: Repository<BannerUserTarget>;
+  uploadedFiles?: Array<{ provider: string; storageLocation: string }>;
 };

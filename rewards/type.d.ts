@@ -81,6 +81,7 @@ export type ProcessManualLocationConfigParams = {
   fileRepo: Repository<File>;
   adminFileRepo: Repository<AdminFile>;
   rewardsByLocationRepo: Repository<RewardsByLocation>;
+  uploadedFiles?: Array<{ provider: string; storageLocation: string }>;
 };
 
 export type ParsedLocation = {
@@ -109,4 +110,5 @@ export type ProcessManualSelectedUserConfigParams = {
   adminFileRepo: Repository<AdminFile>;
   userRepo: Repository<User>;
   rewardUserTargetRepo: Repository<RewardUserTarget>;
+  uploadedFiles?: Array<{ provider: string; storageLocation: string }>;
 };

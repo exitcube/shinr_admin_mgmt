@@ -1,9 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest, FastifyPluginOptions, } from "fastify";
 import { UpdateBannerCategoryBody, ListBannerBody, BannerApprovalBody, ListBannerBodySearch } from "./type";
-import { Banner, Vendor, BannerCategory, BannerUserTargetConfig, File, AdminFile, BannerAudienceType, BannerUserTarget, User, BannersByLocation } from "../models";
+import { Banner, Vendor, BannerCategory, BannerUserTargetConfig, File, AdminFile, BannerAudienceType, BannerUserTarget, User, BannersByLocation, BannerUserTargetConfigType } from "../models";
 import { createSuccessResponse, createPaginatedResponse, } from "../utils/response";
 import { APIError } from "../types/errors";
-import { ILike, In } from "typeorm";
+import { DeepPartial, EntityManager, ILike, In } from "typeorm";
 import {
   BannerReviewStatus,
   BannerStatus,
@@ -15,6 +15,7 @@ import {
 import { MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { createBannerValidateSchema, updateBannerValidateSchema } from "./validators";
 import { fileUpload, parseMultipart, getDimension } from "../utils/fileUpload";
+import { deleteStoredFile } from "../utils/fileStorage";
 import { getUtcRangeFromTwoIsoDates, getDayBoundariesFromIso } from "../utils/helper";
 import {
   deactivateExistingTargetsOfBanner,
@@ -386,105 +387,140 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         } = body;
 
         const uploadResult = await fileUpload(bannerImg, adminId);
-
-        const fileRepo = fastify.db.getRepository(File);
-        const adminFileRepo = fastify.db.getRepository(AdminFile);
-        const bannerRepo = fastify.db.getRepository(Banner);
-        const bannerUserTargetConfigRepo = fastify.db.getRepository(
-          BannerUserTargetConfig
-        );
-        const bannerAudienceTypeRepo = fastify.db.getRepository(BannerAudienceType);
-        const bannerUserTargetRepo = fastify.db.getRepository(BannerUserTarget);
-        const userRepo = fastify.db.getRepository(User);
-        const bannerLocationRepo = fastify.db.getRepository(BannersByLocation);
-
-        const { adminFile: newAdminFile } = await saveFileAndAdminFile(
-          fileRepo,
-          adminFileRepo,
+        const uploadedFiles: Array<{ provider: string; storageLocation: string }> = [
           {
-            adminId,
-            category: ADMIN_FILE_CATEGORY.BANNER,
-            uploadResult,
-            mimeType: bannerImg.mimetype,
-            sizeBytes: bannerImg.sizeBytes,
-          }
-        );
+            provider: uploadResult.provider,
+            storageLocation: uploadResult.storageLocation,
+          },
+        ];
+        let newBanner: Banner | null = null;
+        try {
+          await fastify.db.transaction(async (manager: EntityManager) => {
+            const fileRepo = manager.getRepository(File);
+            const adminFileRepo = manager.getRepository(AdminFile);
+            const bannerRepo = manager.getRepository(Banner);
+            const bannerUserTargetConfigRepo = manager.getRepository(BannerUserTargetConfig);
+            const bannerAudienceTypeRepo = manager.getRepository(BannerAudienceType);
+            const bannerUserTargetRepo = manager.getRepository(BannerUserTarget);
+            const userRepo = manager.getRepository(User);
+            const bannerLocationRepo = manager.getRepository(BannersByLocation);
 
-        const endTimeValue = endTime
-          ? new Date(endTime)
-          : new Date("2099-01-01");
-        const startTimeValue = new Date(startTime as string)
-
-        const newBanner = bannerRepo.create({
-          bgImageId: newAdminFile.id,
-          title,
-          categoryId,
-          owner,
-          vendorId,
-          homePageView: Boolean(homePageView),
-          displaySequence: priority,
-          targetValue,
-          startTime: startTimeValue,
-          endTime: endTimeValue,
-          createdBy: adminId,
-          status: BannerStatus.DRAFT.value,
-          reviewStatus: BannerReviewStatus.PENDING.value,
-          isActive: true,
-        });
-        await bannerRepo.save(newBanner);
-
-        if (targetAudienceId && Array.isArray(targetAudienceId)) {
-          const targetAudienceIds = targetAudienceId.map((id: string) =>
-            Number(id)
-          );
-          const targetAudiences = await bannerUserTargetConfigRepo.find({
-            where: { id: In(targetAudienceIds), isActive: true },
-          });
-
-          if (targetAudiences.length !== targetAudienceIds.length) {
-            throw new APIError(
-              "Target audience not found",
-              400,
-              "TARGET_AUDIENCE_INVALID",
-              false,
-              "One or more given target audiences are not available"
+            const { adminFile: newAdminFile } = await saveFileAndAdminFile(
+              fileRepo,
+              adminFileRepo,
+              {
+                adminId,
+                category: ADMIN_FILE_CATEGORY.BANNER,
+                uploadResult,
+                mimeType: bannerImg.mimetype,
+                sizeBytes: bannerImg.sizeBytes,
+              }
             );
-          }
 
-          for (const targetAudience of targetAudiences) {
-            const newBannerAudeince = bannerAudienceTypeRepo.create({
-              bannerId: newBanner.id,
-              bannerConfigId: targetAudience.id,
+            const endTimeValue = endTime? new Date(endTime): new Date("2099-01-01");
+            const startTimeValue = new Date(startTime as string);
+
+            const bannerPayload: DeepPartial<Banner> = {
+              bgImageId: newAdminFile.id,
+              title,
+              categoryId: categoryId? Number(categoryId) : undefined,
+              owner,
+              vendorId: vendorId  ? Number(vendorId) : undefined,
+              homePageView: Boolean(homePageView),
+              displaySequence: priority? Number(priority) : undefined,
+              targetValue,
+              startTime: startTimeValue,
+              endTime: endTimeValue,
+              createdBy: adminId,
+              status: BannerStatus.DRAFT.value,
+              reviewStatus: BannerReviewStatus.PENDING.value,
               isActive: true,
-            });
-            await bannerAudienceTypeRepo.save(newBannerAudeince);
-          }
+            };
+            const createdBanner = bannerRepo.create(bannerPayload);
+            await bannerRepo.save(createdBanner);
+            newBanner = createdBanner;
 
-          const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
+            if (targetAudienceId && Array.isArray(targetAudienceId)) {
+              const targetAudienceIds = targetAudienceId.map((id: string) =>
+                Number(id)
+              );
+              const targetAudiences = await bannerUserTargetConfigRepo.find({
+                where: { id: In(targetAudienceIds), isActive: true },
+              });
 
-          if (manualSelectedUserConfig) {
-            await processManualSelectedUserConfig({
-              manualFile: files?.selectedCustomer?.[0],
-              adminId,
-              bannerId: newBanner.id,
-              fileRepo,
-              adminFileRepo,
-              userRepo,
-              bannerUserTargetRepo,
-            });
-          }
+              if (targetAudiences.length !== targetAudienceIds.length) {
+                throw new APIError(
+                  "Target audience not found",
+                  400,
+                  "TARGET_AUDIENCE_INVALID",
+                  false,
+                  "One or more given target audiences are not available"
+                );
+              }
 
-          const manualLocationConfig = getManualLocationConfig(targetAudiences);
-          if (manualLocationConfig) {
-            await processManualLocationConfig({
-              locationFile: files?.locationFile?.[0],
-              adminId,
-              bannerId: newBanner.id,
-              fileRepo,
-              adminFileRepo,
-              bannerLocationRepo,
-            });
+              const bannerAudienceMappings = targetAudiences.map((targetAudience: BannerUserTargetConfigType) =>
+                bannerAudienceTypeRepo.create({
+                  bannerId: createdBanner.id,
+                  bannerConfigId: targetAudience.id,
+                  isActive: true,
+                })
+              );
+              await bannerAudienceTypeRepo.save(bannerAudienceMappings);
+
+              const manualSelectedUserConfig = getManualSelectedUserConfig(targetAudiences);
+
+              if (manualSelectedUserConfig) {
+                await processManualSelectedUserConfig({
+                  manualFile: files?.selectedCustomer?.[0],
+                  adminId,
+                  bannerId: createdBanner.id,
+                  fileRepo,
+                  adminFileRepo,
+                  userRepo,
+                  bannerUserTargetRepo,
+                  uploadedFiles,
+                });
+              }
+
+              const manualLocationConfig = getManualLocationConfig(targetAudiences);
+              if (manualLocationConfig) {
+                await processManualLocationConfig({
+                  locationFile: files?.locationFile?.[0],
+                  adminId,
+                  bannerId: createdBanner.id,
+                  fileRepo,
+                  adminFileRepo,
+                  bannerLocationRepo,
+                  uploadedFiles,
+                });
+              }
+            }
+          });
+        } catch (transactionError) {
+          for (const file of uploadedFiles) {
+            try {
+              await deleteStoredFile(file.provider, file.storageLocation);
+            } catch (cleanupError) {
+              fastify.log.warn(
+                {
+                  cleanupError,
+                  provider: file.provider,
+                  storageLocation: file.storageLocation,
+                },
+                "Banner create cleanup failed"
+              );
+            }
           }
+          throw transactionError;
+        }
+        if (!newBanner) {
+          throw new APIError(
+            "Failed to create banners",
+            500,
+            "BANNER_CREATING_FAILED",
+            true,
+            "Failed to Create banners"
+          );
         }
         reply
           .status(200)
@@ -597,23 +633,28 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           endTime,
           homePageView,
         } = body;
+        const bannerIdValue = Number(bannerId);
 
         const bannerImg = files?.bannerImage ? files.bannerImage[0] : null;
+        const uploadedFiles: Array<{ provider: string; storageLocation: string }> = [];
 
-        const fileRepo = fastify.db.getRepository(File);
-        const adminFileRepo = fastify.db.getRepository(AdminFile);
-        const bannerRepo = fastify.db.getRepository(Banner);
-        const bannerUserTargetConfigRepo = fastify.db.getRepository(
+        try {
+          await fastify.db.transaction(async (manager: EntityManager) => {
+
+        const fileRepo = manager.getRepository(File);
+        const adminFileRepo = manager.getRepository(AdminFile);
+        const bannerRepo = manager.getRepository(Banner);
+        const bannerUserTargetConfigRepo = manager.getRepository(
           BannerUserTargetConfig
         );
         const bannerAudienceTypeRepo =
-          fastify.db.getRepository(BannerAudienceType);
-        const bannerUserTargetRepo = fastify.db.getRepository(BannerUserTarget);
-        const bannerLocationRepo = fastify.db.getRepository(BannersByLocation);
-        const userRepo = fastify.db.getRepository(User);
+          manager.getRepository(BannerAudienceType);
+        const bannerUserTargetRepo = manager.getRepository(BannerUserTarget);
+        const bannerLocationRepo = manager.getRepository(BannersByLocation);
+        const userRepo = manager.getRepository(User);
 
         const banner = await bannerRepo.findOne({
-          where: { id: bannerId, isActive: true },
+          where: { id: bannerIdValue, isActive: true },
         });
 
         if (!banner) {
@@ -668,7 +709,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               "Image must be less than 5MB"
             );
           }
-          await fastify.db.query(
+          await manager.query(
             `
   WITH updated_admin AS (
     UPDATE "adminFile"
@@ -685,6 +726,10 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           );
 
           const uploadResult = await fileUpload(bannerImg, adminId);
+          uploadedFiles.push({
+            provider: uploadResult.provider,
+            storageLocation: uploadResult.storageLocation,
+          });
 
         const { adminFile: newAdminFile } = await saveFileAndAdminFile(
           fileRepo,
@@ -701,12 +746,12 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
           banner.bgImageId = newAdminFile.id;
         }
         if (title) banner.title = title;
-        if (categoryId) banner.categoryId = categoryId;
+        if (categoryId) banner.categoryId = Number(categoryId);
         if (owner) banner.owner = owner;
         if (vendorId) {
-          const vendorRepo = fastify.db.getRepository(Vendor);
+          const vendorRepo = manager.getRepository(Vendor);
           const vendor = await vendorRepo.findOne({
-            where: { id: vendorId, isActive: true },
+            where: { id: Number(vendorId), isActive: true },
           });
           if (!vendor) {
             throw new APIError(
@@ -717,13 +762,15 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               "Vendor Doesnt Exist"
             );
           }
-          banner.vendorId = vendorId;
+          banner.vendorId = Number(vendorId);
         }
         if (targetValue) banner.targetValue = targetValue;
-        if (priority) banner.displaySequence = priority;
+        if (priority) banner.displaySequence = Number(priority);
         if (startTime) banner.startTime = new Date(startTime);
         if (endTime) banner.endTime = new Date(endTime);
-        if (homePageView) banner.homePageView = homePageView;
+        if (homePageView) {
+          banner.homePageView = String(homePageView).toLowerCase() === "true";
+        }
         banner.reviewStatus = BannerReviewStatus.PENDING.value;
         banner.status = BannerStatus.DRAFT.value;
 
@@ -776,6 +823,7 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               adminFileRepo,
               userRepo,
               bannerUserTargetRepo,
+              uploadedFiles,
             });
           }
 
@@ -790,8 +838,28 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               fileRepo,
               adminFileRepo,
               bannerLocationRepo,
+              uploadedFiles,
             });
           }
+        }
+
+          });
+        } catch (transactionError) {
+          for (const file of uploadedFiles) {
+            try {
+              await deleteStoredFile(file.provider, file.storageLocation);
+            } catch (cleanupError) {
+              fastify.log.warn(
+                {
+                  cleanupError,
+                  provider: file.provider,
+                  storageLocation: file.storageLocation,
+                },
+                "Banner update cleanup failed"
+              );
+            }
+          }
+          throw transactionError;
         }
 
         reply
