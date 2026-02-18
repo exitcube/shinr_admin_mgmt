@@ -17,6 +17,7 @@ import { createBannerValidateSchema, updateBannerValidateSchema } from "./valida
 import { fileUpload, parseMultipart, getDimension } from "../utils/fileUpload";
 import { getUtcRangeFromTwoIsoDates, getDayBoundariesFromIso } from "../utils/helper";
 import {
+  deactivateExistingTargetsOfBanner,
   getManualLocationConfig,
   getManualSelectedUserConfig,
   processManualLocationConfig,
@@ -608,6 +609,8 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         const bannerAudienceTypeRepo =
           fastify.db.getRepository(BannerAudienceType);
         const bannerUserTargetRepo = fastify.db.getRepository(BannerUserTarget);
+        const bannerLocationRepo = fastify.db.getRepository(BannersByLocation);
+        const userRepo = fastify.db.getRepository(User);
 
         const banner = await bannerRepo.findOne({
           where: { id: bannerId, isActive: true },
@@ -683,24 +686,17 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
 
           const uploadResult = await fileUpload(bannerImg, adminId);
 
-          const newFile = fileRepo.create({
-            fileName: uploadResult.fileName,
-            storageLocation: uploadResult.storageLocation,
+        const { adminFile: newAdminFile } = await saveFileAndAdminFile(
+          fileRepo,
+          adminFileRepo,
+          {
+            adminId,
+            category: ADMIN_FILE_CATEGORY.BANNER,
+            uploadResult,
             mimeType: bannerImg.mimetype,
             sizeBytes: bannerImg.sizeBytes,
-            provider: uploadResult.provider,
-            url: uploadResult.url,
-            isActive: true,
-          });
-          await fileRepo.save(newFile);
-
-          const newAdminFile = adminFileRepo.create({
-            adminId,
-            fileId: newFile.id,
-            category: ADMIN_FILE_CATEGORY.BANNER,
-            isActive: true,
-          });
-          await adminFileRepo.save(newAdminFile);
+          }
+        );
 
           banner.bgImageId = newAdminFile.id;
         }
@@ -734,34 +730,67 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
         await bannerRepo.save(banner);
 
         if (targetAudienceId && Array.isArray(targetAudienceId)) {
-          await bannerAudienceTypeRepo.update(
-            { bannerId: banner.id },
-            { isActive: false }
+        const targetAudienceIds = targetAudienceId.map((id: string) =>
+            Number(id)
           );
-          await bannerUserTargetRepo.update(
-            { bannerId: banner.id },
-            { isActive: false }
-          );
-          for (const id of targetAudienceId) {
-            const targetAudience = await bannerUserTargetConfigRepo.findOne({
-              where: { id: id, isActive: true },
-            });
-            if (!targetAudience) {
-              throw new APIError(
-                "Target audience not found",
-                400,
-                "TARGET_AUDIENCE_INVALID",
-                false,
-                "the given targetAudience is  is not found"
-              );
-            }
-            const newBannerAudeince = bannerAudienceTypeRepo.create({
-              bannerId: banner.id,
-              bannerConfigId: id,
-              isActive: true,
-            });
-            await bannerAudienceTypeRepo.save(newBannerAudeince);
+          const targetAudiences = await bannerUserTargetConfigRepo.find({
+            where: { id: In(targetAudienceIds), isActive: true },
+          });
 
+          if (targetAudiences.length !== targetAudienceIds.length) {
+            throw new APIError(
+              "Target audience not found",
+              400,
+              "TARGET_AUDIENCE_INVALID",
+              false,
+              "The given targetAudience is not found"
+            );
+          }
+
+          await deactivateExistingTargetsOfBanner(
+              banner.id,
+              bannerAudienceTypeRepo,
+              bannerUserTargetRepo,
+              bannerLocationRepo,
+              bannerUserTargetConfigRepo
+            );
+          const newMappings = targetAudiences.map((targetAudience:BannerUserTargetConfig) =>
+            bannerAudienceTypeRepo.create({
+              bannerId: banner.id,
+              bannerConfigId: targetAudience.id,
+              isActive: true,
+            })
+          );
+
+          await bannerAudienceTypeRepo.save(newMappings);
+
+          const manualSelectedUserConfig =
+            getManualSelectedUserConfig(targetAudiences);
+
+          if (manualSelectedUserConfig) {
+            await processManualSelectedUserConfig({
+              manualFile: files?.selectedCustomer?.[0],
+              adminId,
+              bannerId: banner.id,
+              fileRepo,
+              adminFileRepo,
+              userRepo,
+              bannerUserTargetRepo,
+            });
+          }
+
+          const manualLocationConfig =
+            getManualLocationConfig(targetAudiences);
+
+          if (manualLocationConfig) {
+            await processManualLocationConfig({
+              locationFile: files?.locationFile?.[0],
+              adminId,
+              bannerId: banner.id,
+              fileRepo,
+              adminFileRepo,
+              bannerLocationRepo,
+            });
           }
         }
 
