@@ -1,13 +1,24 @@
-export type addServicesBody = {
+export type createServiceBody = {
     name: string;
     displayName: string;
+    description: string;
+    displaySequence: number;
+    status: string;
     imageId: string;
-    targetValue: string;
 }
 
-export type updateServicesBody = {
+export type updateServiceBody = {
     name?: string;
     displayName?: string;
+    description?: string;
+    displaySequence?: number;
+    status?: string;
     imageId?: string;
-    targetValue?: string;
+}
+export type listServiceBody = {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+    sortOrder?: 'ASC' | 'DESC';
 }

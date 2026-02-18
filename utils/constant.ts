@@ -48,6 +48,7 @@ export const ADMIN_FILE_CATEGORY = {
   BANNER: "BANNER_IMAGE",
   BANNER_AUDIENCE: "BANNER_AUDIENCE",
   GENERAL: "GENERAL",
+  SERVICE: "SERVICE_IMAGE",
 };
 
 export const BANNER_IMAGE_ALLOWED_MIMETYPE = [
@@ -103,3 +104,22 @@ export const allowedManualMimeTypes = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-excel",
 ];
+
+export const SERVICE_IMAGE_ALLOWED_MIMETYPE = [
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+];
+
+export const SERVICE_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+
+export const SERVICE_IMAGE_DIMENSION = {
+  WIDTH: 193,
+  HEIGHT: 239,
+};
+
+export const ServiceStatus = {
+  ACTIVE: { displayValue: "Active", value: "ACTIVE" },
+  DRAFT: { displayValue: "Draft", value: "DRAFT" },
+};

@@ -37,6 +37,12 @@ export class Service {
     @Column({ nullable: true })
     description: string;
 
+    @Column({ nullable: true })
+    displaySequence: number;
+
+    @Column({ nullable: true })
+    status: string;
+
     @Column({ default: true })
     isActive: boolean;
 
@@ -52,7 +58,6 @@ export class Service {
     @ManyToOne(() => AdminUser, { onDelete: "CASCADE" })
     @JoinColumn({ name: "createdBy" })
     createdByAdminUser: AdminUser;
-
 
     @Column({ nullable: true })
     removedBy: number;
