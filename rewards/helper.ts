@@ -11,6 +11,7 @@ import {
   User,
 } from "../models";
 import { fileUpload } from "../utils/fileUpload";
+import { deleteStoredFile } from "../utils/fileStorage";
 import {ADMIN_FILE_CATEGORY,allowedManualMimeTypes,TargetAudience} from "../utils/constant";
 import { ParsedLocation, ProcessManualLocationConfigParams, ProcessManualSelectedUserConfigParams, SaveFileAndAdminFileParams } from "./type";
 
@@ -74,6 +75,7 @@ export async function processManualSelectedUserConfig(
     adminFileRepo,
     userRepo,
     rewardUserTargetRepo,
+    uploadedFiles,
   } = params;
 
   if (!manualFile) {
@@ -97,16 +99,21 @@ export async function processManualSelectedUserConfig(
   }
 
   const manualUploadResult = await fileUpload(manualFile, String(adminId));
-  await saveFileAndAdminFile(fileRepo, adminFileRepo, {
-    adminId,
-    category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
-    uploadResult: manualUploadResult,
-    mimeType: manualFile.mimetype,
-    sizeBytes: manualFile.sizeBytes,
+  uploadedFiles?.push({
+    provider: manualUploadResult.provider,
+    storageLocation: manualUploadResult.storageLocation,
   });
+  try {
+    await saveFileAndAdminFile(fileRepo, adminFileRepo, {
+      adminId,
+      category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
+      uploadResult: manualUploadResult,
+      mimeType: manualFile.mimetype,
+      sizeBytes: manualFile.sizeBytes,
+    });
 
-  const manualFileBuffer = await manualFile.toBuffer();
-  const phones = await extractPhonesFromExcelBuffer(manualFileBuffer);
+    const manualFileBuffer = await manualFile.toBuffer();
+    const phones = await extractPhonesFromExcelBuffer(manualFileBuffer);
 
   if (!phones.length) {
     throw new APIError(
@@ -157,7 +164,14 @@ export async function processManualSelectedUserConfig(
     })
   );
 
-  await rewardUserTargetRepo.save(rewardUserTargets);
+    await rewardUserTargetRepo.save(rewardUserTargets);
+  } catch (error) {
+    await deleteStoredFile(
+      manualUploadResult.provider,
+      manualUploadResult.storageLocation
+    );
+    throw error;
+  }
 }
 
 
@@ -172,6 +186,7 @@ export async function processManualLocationConfig(
     fileRepo,
     adminFileRepo,
     rewardsByLocationRepo,
+    uploadedFiles,
   } = params;
 
   if (!locationFile) {
@@ -195,16 +210,21 @@ export async function processManualLocationConfig(
   }
 
   const locationUploadResult = await fileUpload(locationFile, String(adminId));
-  await saveFileAndAdminFile(fileRepo, adminFileRepo, {
-    adminId,
-    category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
-    uploadResult: locationUploadResult,
-    mimeType: locationFile.mimetype,
-    sizeBytes: locationFile.sizeBytes,
+  uploadedFiles?.push({
+    provider: locationUploadResult.provider,
+    storageLocation: locationUploadResult.storageLocation,
   });
+  try {
+    await saveFileAndAdminFile(fileRepo, adminFileRepo, {
+      adminId,
+      category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
+      uploadResult: locationUploadResult,
+      mimeType: locationFile.mimetype,
+      sizeBytes: locationFile.sizeBytes,
+    });
 
-  const locationBuffer = await locationFile.toBuffer();
-  const parsedLocations = await extractLocationsFromExcelBuffer(locationBuffer);
+    const locationBuffer = await locationFile.toBuffer();
+    const parsedLocations = await extractLocationsFromExcelBuffer(locationBuffer);
 
   if (!parsedLocations.length) {
     throw new APIError(
@@ -225,7 +245,14 @@ export async function processManualLocationConfig(
     })
   );
 
-  await rewardsByLocationRepo.save(locationEntities);
+    await rewardsByLocationRepo.save(locationEntities);
+  } catch (error) {
+    await deleteStoredFile(
+      locationUploadResult.provider,
+      locationUploadResult.storageLocation
+    );
+    throw error;
+  }
 }
 
 function normalizePhone(input: string): string {

@@ -4,6 +4,7 @@ import { In, Repository } from "typeorm";
 import { AdminFile, BannerAudienceType, BannerUserTarget, BannerUserTargetConfig, BannersByLocation, File, User } from "../models";
 import { ADMIN_FILE_CATEGORY, allowedManualMimeTypes, TargetAudience } from "../utils/constant";
 import { fileUpload } from "../utils/fileUpload";
+import { deleteStoredFile } from "../utils/fileStorage";
 import { ProcessManualLocationConfigParams, ProcessManualSelectedUserConfigParams, SaveFileAndAdminFileParams } from "./type";
 
 
@@ -65,6 +66,7 @@ export async function processManualSelectedUserConfig(params: ProcessManualSelec
     adminFileRepo,
     userRepo,
     bannerUserTargetRepo,
+    uploadedFiles,
   } = params;
 
 
@@ -89,67 +91,79 @@ export async function processManualSelectedUserConfig(params: ProcessManualSelec
   }
 
   const manualUploadResult = await fileUpload(manualFile, String(adminId));
-  await saveFileAndAdminFile(fileRepo, adminFileRepo, {
-    adminId,
-    category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
-    uploadResult: manualUploadResult,
-    mimeType: manualFile.mimetype,
-    sizeBytes: manualFile.sizeBytes,
+  uploadedFiles?.push({
+    provider: manualUploadResult.provider,
+    storageLocation: manualUploadResult.storageLocation,
   });
+  try {
+    await saveFileAndAdminFile(fileRepo, adminFileRepo, {
+      adminId,
+      category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
+      uploadResult: manualUploadResult,
+      mimeType: manualFile.mimetype,
+      sizeBytes: manualFile.sizeBytes,
+    });
 
-  const manualFileBuffer = await manualFile.toBuffer();
-  const phones = await extractPhonesFromExcelBuffer(manualFileBuffer);
+    const manualFileBuffer = await manualFile.toBuffer();
+    const phones = await extractPhonesFromExcelBuffer(manualFileBuffer);
 
-  if (!phones.length) {
-    throw new APIError(
-      "Bad Request",
-      400,
-      "MANUAL_FILE_INVALID",
-      false,
-      "Selected customer file has no phone numbers."
+    if (!phones.length) {
+      throw new APIError(
+        "Bad Request",
+        400,
+        "MANUAL_FILE_INVALID",
+        false,
+        "Selected customer file has no phone numbers."
+      );
+    }
+
+    const allPhoneVariants = Array.from(
+      new Set(phones.flatMap((phone) => getPhoneVariants(phone)))
     );
-  }
 
-  const allPhoneVariants = Array.from(
-    new Set(phones.flatMap((phone) => getPhoneVariants(phone)))
-  );
+    if (!allPhoneVariants.length) {
+      throw new APIError(
+        "Bad Request",
+        400,
+        "MANUAL_FILE_INVALID",
+        false,
+        "Selected customer file has no valid phone numbers."
+      );
+    }
 
-  if (!allPhoneVariants.length) {
-    throw new APIError(
-      "Bad Request",
-      400,
-      "MANUAL_FILE_INVALID",
-      false,
-      "Selected customer file has no valid phone numbers."
+    const users = await userRepo.find({
+      where: { mobile: In(allPhoneVariants), isActive: true },
+      select: ["id"],
+    });
+
+    const userIdSet = new Set<number>(users.map((user: User) => user.id));
+
+    if (!userIdSet.size) {
+      throw new APIError(
+        "Bad Request",
+        400,
+        "MANUAL_USERS_NOT_FOUND",
+        false,
+        "No active users found for the phone numbers in selected customer file."
+      );
+    }
+
+    const bannerUserTargets = Array.from(userIdSet).map((userId) =>
+      bannerUserTargetRepo.create({
+        bannerId,
+        userId,
+        isActive: true,
+      })
     );
-  }
 
-  const users = await userRepo.find({
-    where: { mobile: In(allPhoneVariants), isActive: true },
-    select: ["id"],
-  });
-
-  const userIdSet = new Set<number>(users.map((user: User) => user.id));
-
-  if (!userIdSet.size) {
-    throw new APIError(
-      "Bad Request",
-      400,
-      "MANUAL_USERS_NOT_FOUND",
-      false,
-      "No active users found for the phone numbers in selected customer file."
+    await bannerUserTargetRepo.save(bannerUserTargets);
+  } catch (error) {
+    await deleteStoredFile(
+      manualUploadResult.provider,
+      manualUploadResult.storageLocation
     );
+    throw error;
   }
-
-  const bannerUserTargets = Array.from(userIdSet).map((userId) =>
-    bannerUserTargetRepo.create({
-      bannerId,
-      userId,
-      isActive: true,
-    })
-  );
-
-  await bannerUserTargetRepo.save(bannerUserTargets);
 }
 
 
@@ -161,6 +175,7 @@ export async function processManualLocationConfig(params: ProcessManualLocationC
     fileRepo,
     adminFileRepo,
     bannerLocationRepo,
+    uploadedFiles,
   } = params;
 
   
@@ -186,37 +201,49 @@ export async function processManualLocationConfig(params: ProcessManualLocationC
   }
 
   const locationUploadResult = await fileUpload(locationFile, String(adminId));
-  await saveFileAndAdminFile(fileRepo, adminFileRepo, {
-    adminId,
-    category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
-    uploadResult: locationUploadResult,
-    mimeType: locationFile.mimetype,
-    sizeBytes: locationFile.sizeBytes,
+  uploadedFiles?.push({
+    provider: locationUploadResult.provider,
+    storageLocation: locationUploadResult.storageLocation,
   });
+  try {
+    await saveFileAndAdminFile(fileRepo, adminFileRepo, {
+      adminId,
+      category: ADMIN_FILE_CATEGORY.BANNER_AUDIENCE,
+      uploadResult: locationUploadResult,
+      mimeType: locationFile.mimetype,
+      sizeBytes: locationFile.sizeBytes,
+    });
 
-  const locationBuffer = await locationFile.toBuffer();
-  const parsedLocations = await extractLocationsFromExcelBuffer(locationBuffer);
+    const locationBuffer = await locationFile.toBuffer();
+    const parsedLocations = await extractLocationsFromExcelBuffer(locationBuffer);
 
-  if (!parsedLocations.length) {
-    throw new APIError(
-      "Bad Request",
-      400,
-      "LOCATION_FILE_INVALID",
-      false,
-      "Location file has no valid coordinates."
+    if (!parsedLocations.length) {
+      throw new APIError(
+        "Bad Request",
+        400,
+        "LOCATION_FILE_INVALID",
+        false,
+        "Location file has no valid coordinates."
+      );
+    }
+
+    const locationEntities = parsedLocations.map((loc) =>
+      bannerLocationRepo.create({
+        bannerId,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        isActive: true,
+      })
     );
+
+    await bannerLocationRepo.save(locationEntities);
+  } catch (error) {
+    await deleteStoredFile(
+      locationUploadResult.provider,
+      locationUploadResult.storageLocation
+    );
+    throw error;
   }
-
-  const locationEntities = parsedLocations.map((loc) =>
-    bannerLocationRepo.create({
-      bannerId,
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-      isActive: true,
-    })
-  );
-
-  await bannerLocationRepo.save(locationEntities);
 }
 
 export function normalizePhone(input: string): string {

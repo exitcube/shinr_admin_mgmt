@@ -215,9 +215,9 @@ export const updateBannerValidateSchema = Joi.object({
   }),
 
   targetAudienceId: Joi.array()
-    .items(Joi.string().optional())
+    .items(Joi.string().required())
     .min(1)
-    .required(),
+    .optional(),
 
   targetValue: Joi.string().optional(),
 
