@@ -1,7 +1,7 @@
 import { APIError } from "../types/errors";
 import * as XLSX from "xlsx";
 import { In, Repository } from "typeorm";
-import { AdminFile, BannerUserTarget, BannerUserTargetConfig, BannersByLocation, File, User } from "../models";
+import { AdminFile, BannerAudienceType, BannerUserTarget, BannerUserTargetConfig, BannersByLocation, File, User } from "../models";
 import { ADMIN_FILE_CATEGORY, allowedManualMimeTypes, TargetAudience } from "../utils/constant";
 import { fileUpload } from "../utils/fileUpload";
 import { ProcessManualLocationConfigParams, ProcessManualSelectedUserConfigParams, SaveFileAndAdminFileParams } from "./type";
@@ -414,4 +414,41 @@ export async function extractLocationsFromExcelBuffer(
   });
 
   return parsedLocations;
+}
+
+export async function deactivateExistingTargetsOfBanner(bannerId: number, bannerAudienceTypeRepo: Repository<BannerAudienceType>, bannerUserTargetRepo: Repository<BannerUserTarget>, bannerLocationRepo: Repository<BannersByLocation>, bannerUserTargetConfigRepo: Repository<BannerUserTargetConfig>) {
+  const existingBannerConfigIds = await bannerAudienceTypeRepo.find({
+    where: { bannerId, isActive: true },
+    select:["bannerConfigId"]
+  });
+
+  if (!existingBannerConfigIds.length) return;
+
+  const configIds = existingBannerConfigIds.map(m => m.bannerConfigId);
+
+  const configs = await bannerUserTargetConfigRepo.find({
+    where: { id: In(configIds), isActive: true }
+  });
+
+  for (const config of configs) {
+
+    if (config.value === "SELECTED_CUSTOMER") {
+      await bannerUserTargetRepo.update(
+        { bannerId },
+        { isActive: false }
+      );
+    }
+
+    if (config.value === "LOCATION_BASED") {
+      await bannerLocationRepo.update(
+        { bannerId },
+        { isActive: false }
+      );
+    }
+  }
+
+  await bannerAudienceTypeRepo.update(
+    { bannerId },
+    { isActive: false }
+  );
 }

@@ -17,6 +17,7 @@ import { createBannerValidateSchema, updateBannerValidateSchema } from "./valida
 import { fileUpload, parseMultipart, getDimension } from "../utils/fileUpload";
 import { getUtcRangeFromTwoIsoDates, getDayBoundariesFromIso } from "../utils/helper";
 import {
+  deactivateExistingTargetsOfBanner,
   getManualLocationConfig,
   getManualSelectedUserConfig,
   processManualLocationConfig,
@@ -745,18 +746,14 @@ export default function controller(fastify: FastifyInstance, opts: FastifyPlugin
               "The given targetAudience is not found"
             );
           }
-          await bannerAudienceTypeRepo.update(
-            { bannerId: banner.id },
-            { isActive: false }
-          );
-          await bannerUserTargetRepo.update(
-            { bannerId: banner.id },
-            { isActive: false }
-          );
-          await bannerLocationRepo.update(
-            { bannerId: banner.id },
-            { isActive: false }
-          );
+
+          await deactivateExistingTargetsOfBanner(
+              banner.id,
+              bannerAudienceTypeRepo,
+              bannerUserTargetRepo,
+              bannerLocationRepo,
+              bannerUserTargetConfigRepo
+            );
           const newMappings = targetAudiences.map((targetAudience:BannerUserTargetConfig) =>
             bannerAudienceTypeRepo.create({
               bannerId: banner.id,
